@@ -2,8 +2,8 @@ package moe.plushie.armourers_workshop.common.skin.type.advanced;
 
 import moe.plushie.armourers_workshop.api.common.skin.Point3D;
 import moe.plushie.armourers_workshop.api.common.skin.Rectangle3D;
+import moe.plushie.armourers_workshop.api.common.skin.data.ISkinProperties;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinType;
-import moe.plushie.armourers_workshop.common.skin.data.SkinProperties;
 import moe.plushie.armourers_workshop.common.skin.type.AbstractSkinPartTypeBase;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -19,12 +19,12 @@ public class SkinAdvancedPartBase extends AbstractSkinPartTypeBase {
 
     @Override
     public String getPartName() {
-        return "base";
+        return "advanced_part";
     }
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void renderBuildingGuide(float scale, SkinProperties skinProps, boolean showHelper) {
+    public void renderBuildingGuide(float scale, ISkinProperties skinProps, boolean showHelper) {
     }
     
     @Override
@@ -34,6 +34,6 @@ public class SkinAdvancedPartBase extends AbstractSkinPartTypeBase {
     
     @Override
     public int getMaximumMarkersNeeded() {
-        return 20;
+        return 0;
     }
 }

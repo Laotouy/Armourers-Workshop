@@ -4,16 +4,17 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
+import moe.plushie.armourers_workshop.api.common.IExtraColours;
+import moe.plushie.armourers_workshop.api.common.painting.IPaintType;
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDye;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinPartType;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinPartTypeTextured;
 import moe.plushie.armourers_workshop.client.model.bake.ColouredFace;
-import moe.plushie.armourers_workshop.common.SkinHelper;
+import moe.plushie.armourers_workshop.common.TextureHelper;
 import moe.plushie.armourers_workshop.common.capability.entityskin.EntitySkinCapability;
 import moe.plushie.armourers_workshop.common.capability.wardrobe.ExtraColours;
 import moe.plushie.armourers_workshop.common.lib.LibModInfo;
-import moe.plushie.armourers_workshop.common.painting.PaintRegistry;
-import moe.plushie.armourers_workshop.common.painting.PaintType;
+import moe.plushie.armourers_workshop.common.painting.PaintTypeRegistry;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
 import moe.plushie.armourers_workshop.common.skin.data.SkinProperties;
 import moe.plushie.armourers_workshop.utils.BitwiseUtils;
@@ -48,7 +49,9 @@ public class EntityTextureInfo {
     private ResourceLocation normalTexture;
     /** The entities replacement texture. */
     private ResourceLocation replacementTexture;
-    /** The last extra colours the entity had when the replacement texture was made. */
+    /**
+     * The last extra colours the entity had when the replacement texture was made.
+     */
     private ExtraColours lastEntityColours;
     /** A buffered image of the entity texture. */
     private BufferedImage bufferedEntityImage;
@@ -67,8 +70,8 @@ public class EntityTextureInfo {
         textureWidth = width;
         textureHeight = height;
         lastEntityTextureHash = -1;
-        lastSkinHashs = new int[5 * EntitySkinCapability.MAX_SLOTS_PER_SKIN_TYPE];
-        lastDyeHashs = new int[5 * EntitySkinCapability.MAX_SLOTS_PER_SKIN_TYPE];
+        lastSkinHashs = new int[5 * EntitySkinCapability.MAX_SLOTS_PER_SKIN_TYPE + 4];
+        lastDyeHashs = new int[5 * EntitySkinCapability.MAX_SLOTS_PER_SKIN_TYPE + 4];
         normalTexture = null;
         replacementTexture = null;
         for (int i = 0; i < lastSkinHashs.length; i++) {
@@ -88,7 +91,7 @@ public class EntityTextureInfo {
 
     public void updateTexture(ResourceLocation resourceLocation) {
         if (lastEntityTextureHash != resourceLocation.hashCode()) {
-            BufferedImage buff = SkinHelper.getBufferedImageSkin(resourceLocation);
+            BufferedImage buff = TextureHelper.getBufferedImageSkin(resourceLocation);
             bufferedEntityImage = null;
             if (buff != null) {
                 loading = false;
@@ -102,7 +105,7 @@ public class EntityTextureInfo {
         if (bufferedEntityImage == null) {
             // Texture is most likely not downloaded yet.
             lastEntityTextureHash = DefaultPlayerSkin.getDefaultSkinLegacy().hashCode();
-            bufferedEntityImage = SkinHelper.getBufferedImageSkin(DefaultPlayerSkin.getDefaultSkinLegacy());
+            bufferedEntityImage = TextureHelper.getBufferedImageSkin(DefaultPlayerSkin.getDefaultSkinLegacy());
             if (bufferedEntityImage != null & !loading) {
                 loading = true;
                 needsUpdate = true;
@@ -110,7 +113,7 @@ public class EntityTextureInfo {
         }
     }
 
-    public void updateExtraColours(ExtraColours extraColours) {
+    public void updateExtraColours(IExtraColours extraColours) {
         if (!lastEntityColours.equals(extraColours)) {
             lastEntityColours = new ExtraColours(extraColours);
             needsUpdate = true;
@@ -166,7 +169,7 @@ public class EntityTextureInfo {
     }
 
     private void applyPlayerToTexture() {
-        bufferedEntitySkinnedImage = SkinHelper.deepCopyBufferedImage(bufferedEntityImage);
+        bufferedEntitySkinnedImage = TextureHelper.deepCopyBufferedImage(bufferedEntityImage);
     }
 
     private void applySkinsToTexture() {
@@ -192,14 +195,14 @@ public class EntityTextureInfo {
             }
         }
     }
-    
+
     public void makePartBlank(ISkinPartTypeTextured skinPartTex, BufferedImage texture, SkinProperties skinProps) {
         Point posBase = skinPartTex.getTextureBasePos();
         Point posOverlay = skinPartTex.getTextureOverlayPos();
-        
+
         int width = (skinPartTex.getTextureModelSize().getX() * 2) + (skinPartTex.getTextureModelSize().getZ() * 2);
         int height = skinPartTex.getTextureModelSize().getY() + skinPartTex.getTextureModelSize().getZ();
-        
+
         for (int ix = 0; ix < width; ix++) {
             for (int iy = 0; iy < height; iy++) {
                 if (skinPartTex.isModelOverridden(skinProps)) {
@@ -216,8 +219,8 @@ public class EntityTextureInfo {
         for (int ix = 0; ix < TEXURE_REPLACMENT_WIDTH; ix++) {
             for (int iy = 0; iy < TEXURE_REPLACMENT_HEIGHT; iy++) {
                 int paintColour = skin.getPaintData()[ix + (iy * textureWidth)];
-                PaintType paintType = PaintRegistry.getPaintTypeFromColour(paintColour);
-                if (paintType == PaintRegistry.PAINT_TYPE_NORMAL) {
+                IPaintType paintType = PaintTypeRegistry.getInstance().getPaintTypeFromColour(paintColour);
+                if (paintType == PaintTypeRegistry.PAINT_TYPE_NORMAL) {
                     paintTexture(bufferedEntitySkinnedImage, ix, iy, BitwiseUtils.setUByteToInt(paintColour, 0, 255));
                 } else if (paintType.getId() >= 1 && paintType.getId() <= 8) {
                     int dyeNumber = paintType.getId() - 1;
@@ -235,7 +238,7 @@ public class EntityTextureInfo {
             }
         }
     }
-    
+
     private void paintTexture(BufferedImage texture, int x, int y, int rgb) {
         texture.setRGB(x, y, rgb);
         // Paint left leg.
@@ -254,7 +257,7 @@ public class EntityTextureInfo {
                 } else {
                     texture.setRGB(23 + (8 - (x - 4)), y + 32, rgb);
                 }
-                
+
             }
         }
 
@@ -274,11 +277,11 @@ public class EntityTextureInfo {
                 } else {
                     texture.setRGB((8 - (x - 48) + 4) + 31, y + 32, rgb);
                 }
-                
+
             }
         }
     }
-    
+
     private void paintMirroredPart(BufferedImage texture, int x, int y, int rgb, int width, int height, int depth, int offsetX, int offsetY) {
         if (y >= 20) {
             if (x < 12) {
@@ -299,7 +302,7 @@ public class EntityTextureInfo {
         byte b = (byte) (colour & 0xFF);
 
         if (dye.length > 3) {
-            PaintType t = PaintRegistry.getPaintTypeFormByte(dye[3]);
+            IPaintType t = PaintTypeRegistry.getInstance().getPaintTypeFormByte(dye[3]);
             if (t.getColourType() != null) {
                 dye = lastEntityColours.getColourBytes(t.getColourType());
             }
@@ -317,11 +320,21 @@ public class EntityTextureInfo {
 
     @Override
     protected void finalize() throws Throwable {
+        deleteTexture();
+        super.finalize();
+    }
+
+    public void deleteTexture() {
         TextureManager renderEngine = Minecraft.getMinecraft().renderEngine;
         if (replacementTexture != null) {
-            renderEngine.deleteTexture(replacementTexture);
+            Minecraft.getMinecraft().addScheduledTask(new Runnable() {
+
+                @Override
+                public void run() {
+                    renderEngine.deleteTexture(replacementTexture);
+                }
+            });
         }
-        super.finalize();
     }
 
     private void createReplacmentTexture() {

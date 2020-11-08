@@ -3,57 +3,53 @@ package moe.plushie.armourers_workshop.client.gui.controls;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import moe.plushie.armourers_workshop.common.inventory.ModContainer;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.inventory.Container;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public abstract class GuiTabbed extends GuiContainer {
+public abstract class GuiTabbed<CONTAINER_TYPE extends ModContainer> extends ModGuiContainer<CONTAINER_TYPE> {
     
     protected GuiTabController tabController;
     protected ArrayList<GuiTabPanel> tabList;
-    private static int activeTabIndex = 0;
-    
-    public GuiTabbed(Container container, boolean fullscreen, ResourceLocation texture) {
+
+    public GuiTabbed(CONTAINER_TYPE container, boolean fullscreen, ResourceLocation tabIcons) {
         super(container);
-        tabController = new GuiTabController(this, fullscreen, texture);
+        tabController = new GuiTabController(this, fullscreen, tabIcons);
         tabList = new ArrayList<GuiTabPanel>();
     }
-    
-    protected int getActiveTab() {
-        return activeTabIndex;
-    }
-    
-    protected void setActiveTab(int value) {
-        activeTabIndex = value;
-    }
-    
+
+    protected abstract int getActiveTab();
+
+    protected abstract void setActiveTab(int value);
+
+    @Override
+    public abstract String getName();
+
     @Override
     public void initGui() {
         super.initGui();
         buttonList.clear();
-        
-        
-        tabController.initGui(guiLeft - 17, guiTop, xSize, ySize);
-        
+
+        tabController.initGui(getGuiLeft() - 17, guiTop, xSize, ySize);
+
         tabController.setActiveTabIndex(getActiveTab());
-        
+
         for (int i = 0; i < tabList.size(); i++) {
-            tabList.get(i).initGui(guiLeft, guiTop, xSize, ySize);
+            tabList.get(i).initGui(getGuiLeft(), getGuiTop(), xSize, ySize);
         }
         buttonList.add(tabController);
-        
+
         tabChanged();
     }
-    
+
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        this.drawDefaultBackground();
+        //this.drawDefaultBackground();
         super.drawScreen(mouseX, mouseY, partialTicks);
-        this.renderHoveredToolTip(mouseX, mouseY);
+        //this.renderHoveredToolTip(mouseX, mouseY);
     }
 
     protected void tabChanged() {
@@ -63,7 +59,7 @@ public abstract class GuiTabbed extends GuiContainer {
             tab.tabChanged(getActiveTab());
         }
     }
-    
+
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int button) throws IOException {
         boolean clicked = false;
@@ -80,6 +76,17 @@ public abstract class GuiTabbed extends GuiContainer {
         }
     }
     
+    @Override
+    protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
+        for (int i = 0; i < tabList.size(); i++) {
+            GuiTabPanel tab = tabList.get(i);
+            if (tab.getTabId() == getActiveTab()) {
+                //tab.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
+            }
+        }
+        super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
+    }
+
     @Override
     protected void mouseReleased(int mouseX, int mouseY, int state) {
         boolean clicked = false;
@@ -102,7 +109,7 @@ public abstract class GuiTabbed extends GuiContainer {
             tabChanged();
         }
     }
-    
+
     @Override
     protected void keyTyped(char c, int keycode) throws IOException {
         boolean keyTyped = false;

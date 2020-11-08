@@ -1,8 +1,8 @@
 package moe.plushie.armourers_workshop.common.inventory.slot;
 
 import moe.plushie.armourers_workshop.common.config.ConfigHandler;
+import moe.plushie.armourers_workshop.common.init.items.ModItems;
 import moe.plushie.armourers_workshop.common.inventory.ContainerDyeTable;
-import moe.plushie.armourers_workshop.common.items.ModItems;
 import moe.plushie.armourers_workshop.common.lib.LibModInfo;
 import moe.plushie.armourers_workshop.common.painting.PaintingHelper;
 import moe.plushie.armourers_workshop.utils.SkinNBTHelper;
@@ -46,7 +46,7 @@ public class SlotDyeBottle extends SlotHidable {
                 return false;
             }
         }
-        if (stack.getItem() == ModItems.dyeBottle) {
+        if (stack.getItem() == ModItems.DYE_BOTTLE) {
             if (PaintingHelper.getToolHasPaint(stack)) {
                 return true;
             }
@@ -73,7 +73,7 @@ public class SlotDyeBottle extends SlotHidable {
             if (stack.isEmpty()) {
                 container.dyeRemoved(getSlotIndex() - 1);
             } else {
-                if (stack.getItem() == ModItems.dyeBottle) {
+                if (stack.getItem() == ModItems.DYE_BOTTLE) {
                     container.dyeAdded(stack, getSlotIndex() - 1);
                 }
             }

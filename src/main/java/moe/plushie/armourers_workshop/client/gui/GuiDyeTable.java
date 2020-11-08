@@ -5,17 +5,18 @@ import java.awt.Color;
 import org.lwjgl.opengl.GL11;
 
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDescriptor;
+import moe.plushie.armourers_workshop.client.lib.LibGuiResources;
 import moe.plushie.armourers_workshop.client.render.ModRenderHelper;
 import moe.plushie.armourers_workshop.client.render.SkinItemRenderHelper;
 import moe.plushie.armourers_workshop.common.config.ConfigHandler;
 import moe.plushie.armourers_workshop.common.inventory.ContainerDyeTable;
 import moe.plushie.armourers_workshop.common.inventory.slot.SlotDyeBottle;
-import moe.plushie.armourers_workshop.common.lib.LibModInfo;
 import moe.plushie.armourers_workshop.common.skin.data.SkinDye;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntityDyeTable;
 import moe.plushie.armourers_workshop.utils.SkinNBTHelper;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -26,7 +27,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class GuiDyeTable extends GuiContainer {
 
-    private static final ResourceLocation texture = new ResourceLocation(LibModInfo.ID.toLowerCase(), "textures/gui/dye-table.png");
+    private static final ResourceLocation texture = new ResourceLocation(LibGuiResources.GUI_DYE_TABLE);
 
     private final TileEntityDyeTable tileEntity;
     private SkinDye[] rolloverDyes;
@@ -35,7 +36,7 @@ public class GuiDyeTable extends GuiContainer {
         super(new ContainerDyeTable(invPlayer, tileEntity));
         this.tileEntity = tileEntity;
 
-        this.xSize = 256;
+        this.xSize = 338;
         this.ySize = 190;
 
         rolloverDyes = new SkinDye[8];
@@ -78,8 +79,8 @@ public class GuiDyeTable extends GuiContainer {
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-        // GuiHelper.renderLocalizedGuiName(this.fontRenderer, this.xSize, tileEntity.getName());
-        // this.fontRenderer.drawString(I18n.format("container.inventory", new Object[0]), 46, this.ySize - 96 + 2, 4210752);
+        GuiHelper.renderLocalizedGuiName(this.fontRenderer, this.xSize, tileEntity.getName());
+        this.fontRenderer.drawString(I18n.format("container.inventory", new Object[0]), 8, this.ySize - 96 + 2, 4210752);
 
         Slot slot = ((ContainerDyeTable) inventorySlots).getOutputSlot();
         ItemStack skinStack = slot.getStack();
@@ -93,7 +94,7 @@ public class GuiDyeTable extends GuiContainer {
             float boxY = 102;
             float scale = 11F;
 
-            GL11.glTranslatef((float) boxX, (float) boxY, 500.0F);
+            GL11.glTranslatef(boxX, boxY, 500.0F);
             GL11.glScalef(-scale, scale, scale);
             float rotation = (float) ((double) System.currentTimeMillis() / 10 % 360);
             float fade = (float) ((double) System.currentTimeMillis() / 400 % Math.PI * 2);
@@ -115,10 +116,11 @@ public class GuiDyeTable extends GuiContainer {
                 GL11.glPushMatrix();
                 // GL11.glEnable(GL11.GL_CULL_FACE);
                 SkinItemRenderHelper.renderSkinAsItem(skinPointer, true, false, 140, 176);
-                // ItemStackRenderHelper.renderItemModelFromSkinPointer(skinPointer, true, false);
+                // ItemStackRenderHelper.renderItemModelFromSkinPointer(skinPointer, true,
+                // false);
                 GL11.glPopMatrix();
                 GL11.glPopMatrix();
-                Color c = new Color(198, 198, 198, (int) (240));
+                Color c = new Color(198, 198, 198, (240));
                 RenderHelper.disableStandardItemLighting();
 
                 GL11.glDisable(GL11.GL_DEPTH_TEST);
@@ -127,7 +129,7 @@ public class GuiDyeTable extends GuiContainer {
                 GL11.glEnable(GL11.GL_DEPTH_TEST);
                 RenderHelper.enableStandardItemLighting();
                 GL11.glPushMatrix();
-                GL11.glTranslatef((float) boxX, (float) boxY, 200.0F);
+                GL11.glTranslatef(boxX, boxY, 200.0F);
                 GL11.glScalef(-scale, scale, scale);
                 GL11.glRotatef(-20, 1, 0, 0);
                 GL11.glRotatef(rotation, 0, 1, 0);

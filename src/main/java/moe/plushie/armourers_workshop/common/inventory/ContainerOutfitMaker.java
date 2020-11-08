@@ -8,12 +8,12 @@ import moe.plushie.armourers_workshop.api.common.skin.data.ISkinProperty;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinPartType;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinPartTypeTextured;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinType;
+import moe.plushie.armourers_workshop.common.init.items.ItemSkin;
 import moe.plushie.armourers_workshop.common.inventory.slot.SlotOutput;
 import moe.plushie.armourers_workshop.common.inventory.slot.SlotSkin;
-import moe.plushie.armourers_workshop.common.items.ItemSkin;
 import moe.plushie.armourers_workshop.common.library.LibraryFile;
 import moe.plushie.armourers_workshop.common.network.messages.client.MessageClientGuiButton.IButtonPress;
-import moe.plushie.armourers_workshop.common.painting.PaintRegistry;
+import moe.plushie.armourers_workshop.common.painting.PaintTypeRegistry;
 import moe.plushie.armourers_workshop.common.painting.PaintingHelper;
 import moe.plushie.armourers_workshop.common.skin.cache.CommonSkinCache;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
@@ -25,6 +25,7 @@ import moe.plushie.armourers_workshop.common.skin.type.SkinTypeRegistry;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntityOutfitMaker;
 import moe.plushie.armourers_workshop.utils.SkinNBTHelper;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
@@ -52,7 +53,7 @@ public class ContainerOutfitMaker extends ModTileContainer<TileEntityOutfitMaker
         indexSkinsEnd = indexSkinsStart;
         for (int skinIndex = 0; skinIndex < skinTypes.length; skinIndex++) {
             for (int i = 0; i < TileEntityOutfitMaker.OUTFIT_ROWS; i++) {
-                addSlotToContainer(new SlotSkin(skinTypes[skinIndex], tileEntity, skinIndex + (i * TileEntityOutfitMaker.OUTFIT_SKINS) + 2, 36 + skinIndex * 20, 58 + i * 20));
+                addSlotToContainer(new SlotSkin(tileEntity, skinIndex + (i * TileEntityOutfitMaker.OUTFIT_SKINS) + 2, 36 + skinIndex * 20, 58 + i * 20, skinTypes));
                 indexSkinsEnd++;
             }
         }
@@ -138,7 +139,7 @@ public class ContainerOutfitMaker extends ModTileContainer<TileEntityOutfitMaker
                 int x = pos.x + ix;
                 int y = pos.y + iy;
                 byte[] rgbt = PaintingHelper.intToBytes(srcPaint[x + (y * textureWidth)]);
-                if ((rgbt[3] & 0xFF) != PaintRegistry.PAINT_TYPE_NONE.getId()) {
+                if ((rgbt[3] & 0xFF) != PaintTypeRegistry.PAINT_TYPE_NONE.getId()) {
                     desPaint[x + (y * textureWidth)] = srcPaint[x + (y * textureWidth)];
                 }
             }
@@ -201,7 +202,7 @@ public class ContainerOutfitMaker extends ModTileContainer<TileEntityOutfitMaker
     }
 
     @Override
-    public void buttonPressed(EntityPlayer player, byte buttonId) {
+    public void buttonPressed(EntityPlayerMP player, byte buttonId) {
         if (buttonId == 0) {
             loadOutfit();
         }

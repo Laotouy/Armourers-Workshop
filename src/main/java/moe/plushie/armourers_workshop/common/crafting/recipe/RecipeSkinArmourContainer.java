@@ -1,7 +1,7 @@
 package moe.plushie.armourers_workshop.common.crafting.recipe;
 
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinType;
-import moe.plushie.armourers_workshop.common.items.ModItems;
+import moe.plushie.armourers_workshop.common.init.items.ModItems;
 import moe.plushie.armourers_workshop.common.skin.data.SkinDescriptor;
 import moe.plushie.armourers_workshop.utils.SkinNBTHelper;
 import net.minecraft.inventory.EntityEquipmentSlot;
@@ -35,7 +35,7 @@ public class RecipeSkinArmourContainer extends RecipeItemSkinning {
                         return ItemStack.EMPTY;
                     }
                     skinStack = stack;
-                } else if (stack.getItem() == ModItems.armourContainerItem) {
+                } else if (stack.getItem() == ModItems.ARMOUR_CONTAINER_ITEM) {
                     if (armourStack != ItemStack.EMPTY) {
                         return ItemStack.EMPTY;
                     }

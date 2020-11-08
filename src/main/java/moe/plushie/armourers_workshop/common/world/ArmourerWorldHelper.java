@@ -7,10 +7,10 @@ import moe.plushie.armourers_workshop.api.common.IRectangle3D;
 import moe.plushie.armourers_workshop.api.common.skin.cubes.ICubeColour;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinPartType;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinType;
-import moe.plushie.armourers_workshop.common.blocks.ModBlocks;
 import moe.plushie.armourers_workshop.common.exception.InvalidCubeTypeException;
 import moe.plushie.armourers_workshop.common.exception.SkinSaveException;
 import moe.plushie.armourers_workshop.common.exception.SkinSaveException.SkinSaveExceptionType;
+import moe.plushie.armourers_workshop.common.init.blocks.ModBlocks;
 import moe.plushie.armourers_workshop.common.skin.cubes.CubeColour;
 import moe.plushie.armourers_workshop.common.skin.cubes.CubeMarkerData;
 import moe.plushie.armourers_workshop.common.skin.cubes.CubeRegistry;
@@ -255,7 +255,7 @@ public final class ArmourerWorldHelper {
         
         BlockPos target = pos.add(shiftX + origin.getX(), origin.getY() - shiftY, shiftZ + origin.getZ());
         
-        if (world.getBlockState(target).getBlock() == ModBlocks.boundingBox) {
+        if (world.getBlockState(target).getBlock() == ModBlocks.BOUNDING_BOX) {
             SyncWorldUpdater.addWorldUpdate(new AsyncWorldUpdateBlock(Blocks.AIR.getDefaultState(), target, world));
             //world.setBlockToAir(target);
             //world.removeTileEntity(target);
@@ -326,7 +326,7 @@ public final class ArmourerWorldHelper {
                     byte guideZ = (byte) iz;
                     
                     TileEntity te = new TileEntityBoundingBox(parentPos, guideX, guideY, guideZ, guidePart);
-                    SyncWorldUpdater.addWorldUpdate(new AsyncWorldUpdateBlock(ModBlocks.boundingBox.getDefaultState(), target, world).setTileEntity(te).setOnlyReplaceable(true));
+                    SyncWorldUpdater.addWorldUpdate(new AsyncWorldUpdateBlock(ModBlocks.BOUNDING_BOX.getDefaultState(), target, world).setTileEntity(te).setOnlyReplaceable(true));
                 }
             }
         }
@@ -357,7 +357,7 @@ public final class ArmourerWorldHelper {
                             iz + offset.getZ() + guideSpace.getZ());
                     
                     if (world.isValid(pos)) {
-                        if (world.getBlockState(target).getBlock() == ModBlocks.boundingBox) {
+                        if (world.getBlockState(target).getBlock() == ModBlocks.BOUNDING_BOX) {
                             SyncWorldUpdater.addWorldUpdate(new AsyncWorldUpdateBlock(Blocks.AIR.getDefaultState(), target, world));
                             //world.setBlockToAir(target);
                         }

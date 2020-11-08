@@ -9,8 +9,8 @@ import moe.plushie.armourers_workshop.common.inventory.ContainerOutfitMaker;
 import moe.plushie.armourers_workshop.common.network.PacketHandler;
 import moe.plushie.armourers_workshop.common.network.messages.client.MessageClientGuiButton;
 import moe.plushie.armourers_workshop.common.network.messages.client.MessageClientGuiUpdateTileProperties;
-import moe.plushie.armourers_workshop.common.property.TileProperty;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntityOutfitMaker;
+import moe.plushie.armourers_workshop.common.tileentities.property.TileProperty;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
@@ -23,7 +23,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class GuiOutfitMaker extends GuiContainer {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(LibGuiResources.OUTFIT_MAKER);
+    private static final ResourceLocation TEXTURE = new ResourceLocation(LibGuiResources.GUI_OUTFIT_MAKER);
     
     private final TileEntityOutfitMaker tileEntity;
     

@@ -5,18 +5,21 @@ import java.awt.image.BufferedImage;
 
 import org.lwjgl.opengl.GL11;
 
+import moe.plushie.armourers_workshop.api.common.IExtraColours;
+import moe.plushie.armourers_workshop.api.common.IExtraColours.ExtraColourType;
+import moe.plushie.armourers_workshop.api.common.capability.IEntitySkinCapability;
+import moe.plushie.armourers_workshop.api.common.capability.IWardrobeCap;
 import moe.plushie.armourers_workshop.client.gui.GuiHelper;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiIconButton;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiTabPanel;
+import moe.plushie.armourers_workshop.client.gui.style.GuiResourceManager;
+import moe.plushie.armourers_workshop.client.gui.style.GuiStyle;
 import moe.plushie.armourers_workshop.client.gui.wardrobe.GuiWardrobe;
 import moe.plushie.armourers_workshop.client.lib.LibGuiResources;
 import moe.plushie.armourers_workshop.client.render.ModRenderHelper;
-import moe.plushie.armourers_workshop.common.SkinHelper;
-import moe.plushie.armourers_workshop.common.capability.entityskin.IEntitySkinCapability;
+import moe.plushie.armourers_workshop.common.TextureHelper;
 import moe.plushie.armourers_workshop.common.capability.wardrobe.ExtraColours;
-import moe.plushie.armourers_workshop.common.capability.wardrobe.ExtraColours.ExtraColourType;
-import moe.plushie.armourers_workshop.common.capability.wardrobe.IWardrobeCap;
-import moe.plushie.armourers_workshop.common.painting.PaintRegistry;
+import moe.plushie.armourers_workshop.common.painting.PaintTypeRegistry;
 import moe.plushie.armourers_workshop.common.painting.PaintingHelper;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.GuiButton;
@@ -29,232 +32,226 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class GuiTabWardrobeColourSettings extends GuiTabPanel {
-    
-    private static final ResourceLocation TEXTURE = new ResourceLocation(LibGuiResources.WARDROBE_2);
-    
+
+    private static final ResourceLocation TEXTURE_1 = new ResourceLocation(LibGuiResources.GUI_WARDROBE_1);
+    private static final ResourceLocation TEXTURE_2 = new ResourceLocation(LibGuiResources.GUI_WARDROBE_2);
+    private static final ResourceLocation GUI_JSON = new ResourceLocation(LibGuiResources.JSON_WARDROBE);
+    private static final ResourceLocation TEXTURE_BUTTONS = new ResourceLocation(LibGuiResources.CONTROL_BUTTONS);
+
+    private final GuiStyle guiStyle;
     private EntityPlayer entityPlayer;
     private IEntitySkinCapability skinCapability;
     private IWardrobeCap wardrobeCapability;
-    
+
     private ExtraColourType selectingColourType = null;
     private Color selectingColour = null;
-    
-    private Color colourSkin;
-    private Color colourHair;
-    private Color colourEye;
-    private Color colourMisc;
-    
-    private GuiIconButton buttonSkinSelect;
-    private GuiIconButton buttonSkinAuto;
-    
-    private GuiIconButton buttonHairSelect;
-    private GuiIconButton buttonHairAuto;
-    
-    private GuiIconButton buttonEyeSelect;
-    private GuiIconButton buttonEyeAuto;
-    
-    private GuiIconButton buttonMiscSelect;
 
-    
-    String guiName = "wardrobe";
-    
+    private int colourPadding = 29;
+    private ExtraColourType[] coloursLeft = new ExtraColourType[] { ExtraColourType.SKIN, ExtraColourType.HAIR, ExtraColourType.EYE };
+    private ExtraColourType[] coloursRight = new ExtraColourType[] { ExtraColourType.MISC_1, ExtraColourType.MISC_2, ExtraColourType.MISC_3, ExtraColourType.MISC_4 };
+
+    private Color[] colours;
+
+    private GuiIconButton[] buttonsSelect;
+    private GuiIconButton[] buttonsClear;
+    private GuiIconButton[] buttonsAuto;
+
+    String guiName = "wardrobe.tab.colour_settings";
+
     public GuiTabWardrobeColourSettings(int tabId, GuiScreen parent, EntityPlayer entityPlayer, IEntitySkinCapability skinCapability, IWardrobeCap wardrobeCapability) {
         super(tabId, parent, false);
+        this.guiStyle = GuiResourceManager.getGuiJsonInfo(GUI_JSON);
         this.entityPlayer = entityPlayer;
         this.skinCapability = skinCapability;
         this.wardrobeCapability = wardrobeCapability;
         getColours();
     }
-    
+
     @Override
     public void initGui(int xPos, int yPos, int width, int height) {
         super.initGui(xPos, yPos, width, height);
-        
-        buttonSkinSelect = new GuiIconButton(parent, 0, 83 + 18, 38 - 2, 18, 18, GuiHelper.getLocalizedControlName(guiName, "selectSkin"), TEXTURE).setIconLocation(238, 0, 18, 18).setHorizontal(false);
-        buttonSkinAuto = new GuiIconButton(parent, 0, 83 + 40, 38 - 2, 18, 18, GuiHelper.getLocalizedControlName(guiName, "autoSkin"), TEXTURE).setIconLocation(238, 76, 18, 18).setHorizontal(false);
-        
-        buttonHairSelect = new GuiIconButton(parent, 0, 159 + 18, 38 - 2, 18, 18, GuiHelper.getLocalizedControlName(guiName, "selectHair"), TEXTURE).setIconLocation(238, 0, 18, 18).setHorizontal(false);
-        buttonHairAuto = new GuiIconButton(parent, 0, 159 + 40, 38 - 2, 18, 18, GuiHelper.getLocalizedControlName(guiName, "autoHair"), TEXTURE).setIconLocation(238, 76, 18, 18).setHorizontal(false);
-        
-        
-        buttonEyeSelect = new GuiIconButton(parent, 0, 83 + 18, 70 - 2, 18, 18, GuiHelper.getLocalizedControlName(guiName, "selectEye"), TEXTURE).setIconLocation(238, 0, 18, 18).setHorizontal(false);
-        buttonEyeAuto = new GuiIconButton(parent, 0, 83 + 40, 70 - 2, 18, 18, GuiHelper.getLocalizedControlName(guiName, "autoEye"), TEXTURE).setIconLocation(238, 76, 18, 18).setHorizontal(false);
-        
-        buttonMiscSelect = new GuiIconButton(parent, 0, 159 + 18, 70 - 2, 18, 18, GuiHelper.getLocalizedControlName(guiName, "selectAcc"), TEXTURE).setIconLocation(238, 0, 18, 18).setHorizontal(false);
-        
-        buttonList.add(buttonSkinSelect);
-        buttonList.add(buttonSkinAuto);
-        
-        buttonList.add(buttonHairSelect);
-        buttonList.add(buttonHairAuto);
-        
-        buttonList.add(buttonEyeSelect);
-        buttonList.add(buttonEyeAuto);
-        
-        buttonList.add(buttonMiscSelect);
+
+        buttonsSelect = new GuiIconButton[coloursLeft.length + coloursRight.length];
+        buttonsClear = new GuiIconButton[coloursLeft.length + coloursRight.length];
+        buttonsAuto = new GuiIconButton[3];
+
+        for (int i = 0; i < buttonsSelect.length; i++) {
+            if (i < coloursLeft.length) {
+                buttonsSelect[i] = new GuiIconButton(parent, 0, 98, 35 + i * colourPadding, 16, 16, TEXTURE_BUTTONS);
+            } else {
+                buttonsSelect[i] = new GuiIconButton(parent, 0, 98 + 95, 35 + i * colourPadding - (coloursLeft.length * colourPadding), 16, 16, TEXTURE_BUTTONS);
+            }
+            buttonsSelect[i].setHoverText(GuiHelper.getLocalizedControlName(guiName, "button." + ExtraColourType.values()[i].toString().toLowerCase() + ".select"));
+            buttonsSelect[i].setIconLocation(144, 192, 16, 16).setDrawButtonBackground(false);
+            buttonList.add(buttonsSelect[i]);
+        }
+
+        for (int i = 0; i < buttonsClear.length; i++) {
+            if (i < coloursLeft.length) {
+                buttonsClear[i] = new GuiIconButton(parent, 0, 98 + 17, 35 + i * colourPadding, 16, 16, TEXTURE_BUTTONS);
+            } else {
+                buttonsClear[i] = new GuiIconButton(parent, 0, 98 + 95 + 17, 35 + i * colourPadding - (coloursLeft.length * colourPadding), 16, 16, TEXTURE_BUTTONS);
+            }
+            buttonsClear[i].setHoverText(GuiHelper.getLocalizedControlName(guiName, "button." + ExtraColourType.values()[i].toString().toLowerCase() + ".clear"));
+            buttonsClear[i].setIconLocation(208, 160, 16, 16).setDrawButtonBackground(false);
+            buttonList.add(buttonsClear[i]);
+        }
+
+        for (int i = 0; i < buttonsAuto.length; i++) {
+            if (i < coloursLeft.length) {
+                buttonsAuto[i] = new GuiIconButton(parent, 0, 98 + 17 * 2, 35 + i * colourPadding, 16, 16, TEXTURE_BUTTONS);
+            } else {
+                buttonsAuto[i] = new GuiIconButton(parent, 0, 98 + 95 + 17 * 2, 35 + i * colourPadding - (coloursLeft.length * colourPadding), 16, 16, TEXTURE_BUTTONS);
+            }
+            buttonsAuto[i].setHoverText(GuiHelper.getLocalizedControlName(guiName, "button." + ExtraColourType.values()[i].toString().toLowerCase() + ".auto"));
+            buttonsAuto[i].setIconLocation(144, 208, 16, 16).setDrawButtonBackground(false);
+            buttonList.add(buttonsAuto[i]);
+        }
     }
-    
+
     private void getColours() {
-        ExtraColours extraColours = wardrobeCapability.getExtraColours();
-        this.colourSkin = new Color(extraColours.getColour(ExtraColourType.SKIN));
-        this.colourHair = new Color(extraColours.getColour(ExtraColourType.HAIR));
-        this.colourEye = new Color(extraColours.getColour(ExtraColourType.EYE));
-        this.colourMisc = new Color(extraColours.getColour(ExtraColourType.MISC));
+        IExtraColours extraColours = wardrobeCapability.getExtraColours();
+        colours = new Color[ExtraColourType.values().length];
+        for (int i = 0; i < colours.length; i++) {
+            colours[i] = new Color(extraColours.getColour(ExtraColourType.values()[i]), true);
+        }
     }
-    
+
     @Override
     public boolean mouseClicked(int mouseX, int mouseY, int button) {
         if (button == 0 & selectingColourType != null) {
             byte[] newColour = PaintingHelper.intToBytes(selectingColour.getRGB());
-            newColour[3] = (byte) PaintRegistry.PAINT_TYPE_NORMAL.getId();
+            newColour[3] = (byte) PaintTypeRegistry.PAINT_TYPE_NORMAL.getId();
             wardrobeCapability.getExtraColours().setColourBytes(selectingColourType, newColour);
             wardrobeCapability.sendUpdateToServer();
             selectingColourType = null;
-            buttonSkinSelect.setPressed(false);
-            buttonHairSelect.setPressed(false);
-            buttonEyeSelect.setPressed(false);
-            buttonMiscSelect.setPressed(false);
+            for (int i = 0; i < buttonsSelect.length; i++) {
+                buttonsSelect[i].setPressed(false);
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
-    
+
     @Override
     protected void actionPerformed(GuiButton button) {
-        if (button == buttonSkinSelect) {
-            selectingColourType = ExtraColourType.SKIN;
-            buttonSkinSelect.setPressed(true);
+        for (int i = 0; i < buttonsSelect.length; i++) {
+            if (button == buttonsSelect[i]) {
+                selectingColourType = ExtraColourType.values()[i];
+                buttonsSelect[i].setPressed(true);
+            }
         }
-        if (button == buttonHairSelect) {
-            selectingColourType = ExtraColourType.HAIR;
-            buttonHairSelect.setPressed(true);
+
+        for (int i = 0; i < buttonsAuto.length; i++) {
+            if (button == buttonsAuto[i]) {
+                int newColour = autoColour((AbstractClientPlayer) this.entityPlayer, ExtraColourType.values()[i]);
+                wardrobeCapability.getExtraColours().setColour(ExtraColourType.values()[i], newColour);
+                wardrobeCapability.sendUpdateToServer();
+            }
         }
-        if (button == buttonEyeSelect) {
-            selectingColourType = ExtraColourType.EYE;
-            buttonEyeSelect.setPressed(true);
-        }
-        if (button == buttonMiscSelect) {
-            selectingColourType = ExtraColourType.MISC;
-            buttonMiscSelect.setPressed(true);
-        }
-        
-        if (button == buttonSkinAuto) {
-            int newSkinColour = autoColour((AbstractClientPlayer) this.entityPlayer, ExtraColourType.SKIN);
-            wardrobeCapability.getExtraColours().setColour(ExtraColourType.SKIN, newSkinColour);
-            wardrobeCapability.sendUpdateToServer();
-        }
-        
-        if (button == buttonHairAuto) {
-            int newHairColour = autoColour((AbstractClientPlayer) this.entityPlayer, ExtraColourType.HAIR);
-            wardrobeCapability.getExtraColours().setColour(ExtraColourType.HAIR, newHairColour);
-            wardrobeCapability.sendUpdateToServer();
-        }
-        
-        if (button == buttonEyeAuto) {
-            int newEyeColour = autoColour((AbstractClientPlayer) this.entityPlayer, ExtraColourType.EYE);
-            wardrobeCapability.getExtraColours().setColour(ExtraColourType.EYE, newEyeColour);
-            wardrobeCapability.sendUpdateToServer();
+
+        for (int i = 0; i < buttonsClear.length; i++) {
+            if (button == buttonsClear[i]) {
+                wardrobeCapability.getExtraColours().setColour(ExtraColourType.values()[i], ExtraColours.COLOUR_NONE);
+            }
         }
     }
-    
+
     @Override
     public void drawBackgroundLayer(float partialTickTime, int mouseX, int mouseY) {
         GlStateManager.color(1F, 1F, 1F, 1F);
+
+        // Colour display boxes.
+        for (int i = 0; i < coloursLeft.length; i++) {
+            drawColourDisplay(83, 36 + colourPadding * i, colours[i]);
+        }
+        for (int i = 0; i < coloursRight.length; i++) {
+            drawColourDisplay(83 + 95, 36 + colourPadding * i, colours[i + coloursLeft.length]);
+        }
         
-        //Top half of GUI. (active tab)
-        //this.drawTexturedModalRect(this.x, this.y, 0, 0, 236, 151);
-        
-        //Bottom half of GUI. (player inventory)
-        //this.drawTexturedModalRect(this.x + 29, this.y + 151, 29, 151, 178, 89);
-        
-        // Skin colour display
-        drawColourDisplay(83, 38, colourSkin);
-        
-        // Hair colour display
-        drawColourDisplay(159, 38, colourHair);
-        
-        // Eye colour display
-        drawColourDisplay(83, 70, colourEye);
-        
-        // Acc colour display
-        drawColourDisplay(159, 70, colourMisc);
-        
+        GlStateManager.color(1F, 1F, 1F, 1F);
+
         // Palette
-        mc.renderEngine.bindTexture(TEXTURE);
-        this.drawTexturedModalRect(this.x + 83, this.y + 88, 22, 0, 128, 56);
+        mc.renderEngine.bindTexture(TEXTURE_1);
+        this.drawTexturedModalRect(this.x, this.y + 152, 0, 152, 256, 98);
+
+        mc.renderEngine.bindTexture(TEXTURE_2);
+        this.drawTexturedModalRect(this.x + 256, this.y + 152, 0, 152, 22, 98);
     }
-    
+
     private void drawColourDisplay(int x, int y, Color colour) {
-        float r = (float) colour.getRed() / 255F;
-        float g = (float) colour.getGreen() / 255F;
-        float b = (float) colour.getBlue() / 255F;
-        drawColourDisplay(x, y, r, g, b);
+        float r = colour.getRed() / 255F;
+        float g = colour.getGreen() / 255F;
+        float b = colour.getBlue() / 255F;
+        float t = colour.getAlpha() / 255F;
+        drawColourDisplay(x, y, r, g, b, t);
     }
-    
-    private void drawColourDisplay(int x, int y, float r, float g, float b) {
-        this.drawTexturedModalRect(this.x + x, this.y + y, 242, 180, 14, 14);
-        GlStateManager.color(r, g, b, 1F);
-        this.drawTexturedModalRect(this.x + x + 1, this.y + y + 1, 243, 181, 12, 12);
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+
+    private void drawColourDisplay(int x, int y, float r, float g, float b, float t) {
+        if (t != 0) {
+            this.drawTexturedModalRect(this.x + x, this.y + y, 242, 180, 14, 14);
+            GlStateManager.color(r, g, b, 1F);
+            this.drawTexturedModalRect(this.x + x + 1, this.y + y + 1, 243, 181, 12, 12);
+            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        } else {
+            this.drawTexturedModalRect(this.x + x, this.y + y, 242, 180 - 14, 14, 14);
+        }
     }
-    
+
     @Override
     public void drawForegroundLayer(int mouseX, int mouseY, float partialTickTime) {
         super.drawForegroundLayer(mouseX, mouseY, partialTickTime);
+
+        // String labelSkinOverride =
+        // GuiHelper.getLocalizedControlName("equipmentWardrobe", "label.skinOverride");
+        // this.fontRendererObj.drawString(labelSkinOverride + ":", 165, 18, 4210752);
+        GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.resetColor();
+
+        for (int i = 0; i < coloursLeft.length; i++) {
+            fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "label." + coloursLeft[i].toString().toLowerCase()), 83, 26 + i * colourPadding, guiStyle.getColour("text"));
+        }
+        for (int i = 0; i < coloursRight.length; i++) {
+            fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "label." + coloursRight[i].toString().toLowerCase()), 83 + 95, 26 + i * colourPadding, guiStyle.getColour("text"));
+        }
         
-        //String labelSkinOverride = GuiHelper.getLocalizedControlName("equipmentWardrobe", "label.skinOverride");
-        //this.fontRendererObj.drawString(labelSkinOverride + ":", 165, 18, 4210752); 
-        
-        fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "label.skinColour") + ":", 83, 26, 4210752); 
-        fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "label.hairColour") + ":", 159, 26, 4210752); 
-        
-        fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "label.eyeColour") + ":", 83, 58, 4210752); 
-        fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "label.miscColour") + ":", 159, 58, 4210752); 
-        
+        fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "label.palette"), 6, 152 + 5, guiStyle.getColour("text"));
+
         getColours();
-        
-        if (selectingColourType == ExtraColourType.SKIN & selectingColour != null) {
-            colourSkin = selectingColour;
+
+        if (selectingColour != null & selectingColourType != null) {
+            colours[selectingColourType.ordinal()] = selectingColour;
         }
-        if (selectingColourType == ExtraColourType.HAIR & selectingColour != null) {
-            colourHair = selectingColour;
-        }
-        if (selectingColourType == ExtraColourType.EYE & selectingColour != null) {
-            colourEye = selectingColour;
-        }
-        if (selectingColourType == ExtraColourType.MISC & selectingColour != null) {
-            colourMisc = selectingColour;
-        }
-        
+
         GL11.glPushMatrix();
         GL11.glTranslated(-x, -y, 0);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         ModRenderHelper.enableAlphaBlend();
         // Draw player preview.
         if (selectingColourType != null) {
-            selectingColour = ((GuiWardrobe)parent).drawPlayerPreview(x, y, mouseX, mouseY, true);
+            selectingColour = ((GuiWardrobe) parent).drawPlayerPreview(x, y, mouseX, mouseY, true);
         } else {
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             ModRenderHelper.enableAlphaBlend();
-            ((GuiWardrobe)parent).drawPlayerPreview(x, y, mouseX, mouseY, false);
+            ((GuiWardrobe) parent).drawPlayerPreview(x, y, mouseX, mouseY, false);
         }
         GL11.glPopMatrix();
         for (int i = 0; i < buttonList.size(); i++) {
             GuiButton button = (GuiButton) buttonList.get(i);
             if (button instanceof GuiIconButton) {
-                ((GuiIconButton)button).drawRollover(mc, mouseX - x, mouseY - y);
+                ((GuiIconButton) button).drawRollover(mc, mouseX - x, mouseY - y);
             }
         }
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
-    
+
     public int autoColour(AbstractClientPlayer player, ExtraColourType type) {
-        BufferedImage playerTexture = SkinHelper.getBufferedImageSkin(player);
+        BufferedImage playerTexture = TextureHelper.getBufferedImageSkin(player);
         if (playerTexture == null) {
-            return ExtraColours.COLOUR_HAIR_DEFAULT.getRGB();
+            return ExtraColours.COLOUR_NONE;
         }
-        
+
         int r = 0, g = 0, b = 0;
-        
+
         if (type == ExtraColourType.SKIN) {
             for (int ix = 0; ix < 2; ix++) {
                 for (int iy = 0; iy < 1; iy++) {
@@ -284,15 +281,15 @@ public class GuiTabWardrobeColourSettings extends GuiTabPanel {
         if (type == ExtraColourType.EYE) {
             Color c1 = new Color(playerTexture.getRGB(10, 13));
             Color c2 = new Color(playerTexture.getRGB(13, 13));
-            
+
             r += c1.getRed();
             g += c1.getGreen();
             b += c1.getBlue();
-            
+
             r += c2.getRed();
             g += c2.getGreen();
             b += c2.getBlue();
-            
+
             r = r / 2;
             g = g / 2;
             b = b / 2;

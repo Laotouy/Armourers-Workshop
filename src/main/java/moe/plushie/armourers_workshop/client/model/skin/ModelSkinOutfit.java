@@ -4,16 +4,18 @@ import java.util.ArrayList;
 
 import org.lwjgl.opengl.GL11;
 
+import moe.plushie.armourers_workshop.api.common.IExtraColours;
 import moe.plushie.armourers_workshop.api.common.skin.Point3D;
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDye;
 import moe.plushie.armourers_workshop.client.render.SkinPartRenderData;
 import moe.plushie.armourers_workshop.client.render.SkinRenderData;
 import moe.plushie.armourers_workshop.client.skin.SkinModelTexture;
 import moe.plushie.armourers_workshop.client.skin.cache.ClientSkinPaintCache;
-import moe.plushie.armourers_workshop.common.capability.wardrobe.ExtraColours;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
 import moe.plushie.armourers_workshop.common.skin.data.SkinPart;
 import moe.plushie.armourers_workshop.common.skin.data.SkinProperties;
+import moe.plushie.armourers_workshop.proxies.ClientProxy;
+import moe.plushie.armourers_workshop.proxies.ClientProxy.TexturePaintType;
 import moe.plushie.armourers_workshop.utils.SkinUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
@@ -25,10 +27,10 @@ import net.minecraft.util.EnumFacing;
 public class ModelSkinOutfit extends ModelTypeHelper {
 
     @Override
-    public void render(Entity entity, Skin skin, boolean showSkinPaint, ISkinDye skinDye, ExtraColours extraColours, boolean itemRender, double distance, boolean doLodLoading) {
+    public void render(Entity entity, Skin skin, boolean showSkinPaint, ISkinDye skinDye, IExtraColours extraColours, boolean itemRender, double distance, boolean doLodLoading) {
         render(entity, skin, new SkinRenderData(SCALE, skinDye, extraColours, distance, doLodLoading, showSkinPaint, itemRender, null));
     }
-    
+
     @Override
     public void render(Entity entity, Skin skin, SkinRenderData renderData) {
         if (skin == null) {
@@ -42,9 +44,10 @@ public class ModelSkinOutfit extends ModelTypeHelper {
             this.isRiding = player.isRiding();
         }
 
+        GlStateManager.pushAttrib();
         RenderHelper.enableGUIStandardItemLighting();
 
-        if (skin.hasPaintData() & renderData.isShowSkinPaint()) {
+        if (skin.hasPaintData() & renderData.isShowSkinPaint() & ClientProxy.getTexturePaintType() == TexturePaintType.TEXTURE_REPLACE) {
             SkinModelTexture st = ClientSkinPaintCache.INSTANCE.getTextureForSkin(skin, renderData.getSkinDye(), renderData.getExtraColours());
             st.bindTexture();
             GL11.glPushMatrix();
@@ -52,25 +55,36 @@ public class ModelSkinOutfit extends ModelTypeHelper {
             GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glEnable(GL11.GL_ALPHA_TEST);
             if (!renderData.isItemRender()) {
-                GL11.glTranslated(0, -12 * SCALE, 0);
+                GlStateManager.enablePolygonOffset();
+                GlStateManager.doPolygonOffset(-2, 1);
+                //GL11.glTranslated(0, -12 * SCALE, 0);
             }
             bipedHead.render(SCALE);
             bipedBody.render(SCALE);
             bipedLeftArm.render(SCALE);
             bipedRightArm.render(SCALE);
+            
+            GL11.glTranslated(0, 0 , 0.005F);
+            GL11.glTranslated(0.02F, 0 , 0);
             bipedLeftLeg.render(SCALE);
+            GL11.glTranslated(-0.02F, 0 , 0);
             bipedRightLeg.render(SCALE);
+            GL11.glTranslated(0, 0 , -0.005F);
+            if (!renderData.isItemRender()) {
+                GlStateManager.doPolygonOffset(0F, 0F);
+                GlStateManager.disablePolygonOffset();
+            }
             GL11.glPopAttrib();
             GL11.glPopMatrix();
         }
 
         boolean overrideChest = SkinProperties.PROP_MODEL_OVERRIDE_CHEST.getValue(skin.getProperties());
-        
+
         double angle = 45D;
 
         for (int i = 0; i < parts.size(); i++) {
             SkinPart part = parts.get(i);
-            
+
             GL11.glPushMatrix();
             if (isChild) {
                 float f6 = 2.0F;
@@ -131,8 +145,8 @@ public class ModelSkinOutfit extends ModelTypeHelper {
 
             GL11.glPopMatrix();
         }
-
-        GL11.glColor3f(1F, 1F, 1F);
+        GlStateManager.popAttrib();
+        GlStateManager.color(1F, 1F, 1F, 1F);
     }
 
     private void renderHead(SkinPartRenderData partRenderData) {
@@ -151,6 +165,7 @@ public class ModelSkinOutfit extends ModelTypeHelper {
 
     private void renderChest(SkinPartRenderData partRenderData) {
         GL11.glPushMatrix();
+        GL11.glRotatef((float) Math.toDegrees(this.bipedBody.rotateAngleY), 0, 1, 0);
         if (isSneak) {
             GlStateManager.translate(0.0F, 0.2F, 0.0F);
             GlStateManager.rotate((float) Math.toDegrees(bipedBody.rotateAngleX), 1F, 0, 0);
@@ -165,8 +180,13 @@ public class ModelSkinOutfit extends ModelTypeHelper {
         if (isSneak) {
             GlStateManager.translate(0.0F, 0.2F, 0.0F);
         }
+        GL11.glRotatef((float) Math.toDegrees(this.bipedBody.rotateAngleY), 0, 1, 0);
+
         GL11.glTranslatef(5.0F * partRenderData.getScale(), 0F, 0F);
         GL11.glTranslatef(0F, 2.0F * partRenderData.getScale(), 0F);
+        if (slim & !override) {
+            GlStateManager.translate(0, partRenderData.getScale() * 0.5F, 0);
+        }
 
         GL11.glRotatef((float) Math.toDegrees(this.bipedLeftArm.rotateAngleZ), 0, 0, 1);
         GL11.glRotatef((float) Math.toDegrees(this.bipedLeftArm.rotateAngleY), 0, 1, 0);
@@ -174,11 +194,8 @@ public class ModelSkinOutfit extends ModelTypeHelper {
 
         if (slim & !override) {
             GL11.glTranslatef(-0.25F * partRenderData.getScale(), 0F, 0F);
-            GL11.glTranslatef(0F, 0.5F * partRenderData.getScale(), 0F);
-
             GL11.glScalef(0.75F, 1F, 1F);
         }
-
         renderPart(partRenderData);
 
         GL11.glPopMatrix();
@@ -186,11 +203,17 @@ public class ModelSkinOutfit extends ModelTypeHelper {
 
     private void renderRightArm(SkinPartRenderData partRenderData, boolean override) {
         GL11.glPushMatrix();
+        GL11.glColor3f(1F, 1F, 1F);
         if (isSneak) {
             GlStateManager.translate(0.0F, 0.2F, 0.0F);
         }
+        GL11.glRotatef((float) Math.toDegrees(this.bipedBody.rotateAngleY), 0, 1, 0);
+
         GL11.glTranslatef(-5.0F * partRenderData.getScale(), 0F, 0F);
-        GL11.glTranslatef(0F, 2.0F * partRenderData.getScale(), 0F);
+        GL11.glTranslatef(0, 2.0F * partRenderData.getScale(), 0F);
+        if (slim & !override) {
+            GlStateManager.translate(0, partRenderData.getScale() * 0.5F, 0);
+        }
 
         GL11.glRotatef((float) Math.toDegrees(this.bipedRightArm.rotateAngleZ), 0, 0, 1);
         GL11.glRotatef((float) Math.toDegrees(this.bipedRightArm.rotateAngleY), 0, 1, 0);
@@ -198,8 +221,6 @@ public class ModelSkinOutfit extends ModelTypeHelper {
 
         if (slim & !override) {
             GL11.glTranslatef(0.25F * partRenderData.getScale(), 0F, 0F);
-            GL11.glTranslatef(0F, 0.5F * partRenderData.getScale(), 0F);
-
             GL11.glScalef(0.75F, 1F, 1F);
         }
 
@@ -283,6 +304,7 @@ public class ModelSkinOutfit extends ModelTypeHelper {
 
     private void renderSkirt(SkinPartRenderData partRenderData) {
         GL11.glPushMatrix();
+        GL11.glRotatef((float) Math.toDegrees(this.bipedBody.rotateAngleY), 0, 1, 0);
         GL11.glColor3f(1F, 1F, 1F);
         if (isSneak) {
             GlStateManager.translate(0.0F, 0.2F, 0.0F);

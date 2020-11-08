@@ -22,10 +22,13 @@ public final class ModAddonManager {
     //public static AddonBotania addonBotania;
     public static AddonBuildCraft addonBuildCraft;
     public static ModAddon addonColoredLights;
+    public static AddonCustomEntities addonCustomEntities;
     public static AddonCustomNPCS addonCustomNPCS;
     //public static AddonGlassShards addonGlassShards;
+    public static AddonHauntedAstolfoBeanPlushie addonHauntedAstolfoBeanPlushie;
     //public static AddonIntegratedCircuits addonIntegratedCircuits;
     public static AddonJBRAClient addonJBRAClient;
+    public static AddonJEI addonJEI;
     //public static AddonLittleMaidMob addonLittleMaidMob;
     //public static AddonMaplecrafted addonMaplecrafted;
     //public static AddonMekanismTools addonMekanismTools;
@@ -37,6 +40,9 @@ public final class ModAddonManager {
     //public static AddonMoreSwordsMod addonMoreSwordsMod;
     public static AddonNEI addonNEI;
     //public static AddonOreSpawn addonOreSpawn;
+    public static AddonOverlord addonOverlord;
+    public static AddonRealFirstPerson addonRealFirstPerson;
+    public static AddonRealFirstPerson2 addonRealFirstPerson2;
     public static AddonShaders addonShaders;
     public static ModAddon addonSmartMoving;
     //public static AddonTails addonTails;
@@ -64,10 +70,13 @@ public final class ModAddonManager {
         //addonBotania = new AddonBotania();
         addonBuildCraft = new AddonBuildCraft();
         addonColoredLights = new ModAddon("easycoloredlights", "Colored Lights");
+        addonCustomEntities = new  AddonCustomEntities();
         addonCustomNPCS = new AddonCustomNPCS();
         //addonGlassShards = new AddonGlassShards();
+        addonHauntedAstolfoBeanPlushie = new AddonHauntedAstolfoBeanPlushie();
         //addonIntegratedCircuits = new AddonIntegratedCircuits();
         addonJBRAClient = new AddonJBRAClient();
+        addonJEI = new AddonJEI();
         //addonLittleMaidMob = new AddonLittleMaidMob();
         //addonMaplecrafted = new AddonMaplecrafted();
         //addonMekanismTools = new AddonMekanismTools();
@@ -79,6 +88,9 @@ public final class ModAddonManager {
         //addonMoreSwordsMod = new AddonMoreSwordsMod();
         addonNEI = new AddonNEI();
         //addonOreSpawn = new AddonOreSpawn();
+        addonOverlord = new AddonOverlord();
+        addonRealFirstPerson = new AddonRealFirstPerson();
+        addonRealFirstPerson2 = new AddonRealFirstPerson2();
         addonShaders = new AddonShaders();
         addonSmartMoving = new ModAddon("SmartMoving", "Smart Moving");
         //addonTails = new AddonTails();

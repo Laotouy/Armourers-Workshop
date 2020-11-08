@@ -6,12 +6,12 @@ import moe.plushie.armourers_workshop.client.gui.mannequin.GuiMannequin;
 import moe.plushie.armourers_workshop.common.GameProfileCache;
 import moe.plushie.armourers_workshop.common.GameProfileCache.IGameProfileCallback;
 import moe.plushie.armourers_workshop.common.capability.wardrobe.ExtraColours;
-import moe.plushie.armourers_workshop.common.data.BipedRotations;
-import moe.plushie.armourers_workshop.common.data.TextureType;
+import moe.plushie.armourers_workshop.common.data.type.BipedRotations;
+import moe.plushie.armourers_workshop.common.data.type.TextureType;
 import moe.plushie.armourers_workshop.common.inventory.ContainerMannequin;
 import moe.plushie.armourers_workshop.common.inventory.IGuiFactory;
 import moe.plushie.armourers_workshop.common.lib.LibBlockNames;
-import moe.plushie.armourers_workshop.common.property.TileProperty;
+import moe.plushie.armourers_workshop.common.tileentities.property.TileProperty;
 import moe.plushie.armourers_workshop.common.world.AsyncWorldUpdateGameProfileDownload;
 import moe.plushie.armourers_workshop.utils.ModLogger;
 import net.minecraft.client.gui.GuiScreen;
@@ -87,7 +87,7 @@ public class TileEntityMannequin extends AbstractTileEntityInventory implements 
 
     @Override
     public SPacketUpdateTileEntity getUpdatePacket() {
-        return new SPacketUpdateTileEntity(getPos(), 5, getUpdateTag());
+        return new SPacketUpdateTileEntity(getPos(), -1, getUpdateTag());
     }
 
     @Override

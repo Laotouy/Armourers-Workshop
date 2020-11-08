@@ -4,13 +4,16 @@ import java.util.UUID;
 
 import com.google.gson.JsonObject;
 
+import moe.plushie.armourers_workshop.common.library.global.auth.PlushieAuth;
+import moe.plushie.armourers_workshop.common.library.global.auth.PlushieSession;
+
 public class PlushieUser {
-    
+
     private int id;
     private UUID uuid;
     private String username;
     private int permissionGroupId;
-    
+
     public static PlushieUser readPlushieUser(JsonObject json) {
         if (json != null) {
             if (json.has("valid") && json.get("valid").getAsBoolean()) {
@@ -30,26 +33,31 @@ public class PlushieUser {
         }
         return null;
     }
-    
+
+    public static PlushieUser getLocalUser() {
+        PlushieSession session = PlushieAuth.PLUSHIE_SESSION;
+        return new PlushieUser(session.getServerId(), session.getMcId(), session.getMcName(), session.getPermissionGroupID());
+    }
+
     private PlushieUser(int id, UUID uuid, String username, int permissionGroupId) {
         this.id = id;
         this.uuid = uuid;
         this.username = username;
         this.permissionGroupId = permissionGroupId;
     }
-    
+
     public int getId() {
         return id;
     }
-    
+
     public UUID getUuid() {
         return uuid;
     }
-    
+
     public String getUsername() {
         return username;
     }
-    
+
     public int getPermissionGroupId() {
         return permissionGroupId;
     }

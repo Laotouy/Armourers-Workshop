@@ -2,15 +2,15 @@ package moe.plushie.armourers_workshop.client.render.tileentities;
 
 import org.lwjgl.opengl.GL11;
 
+import moe.plushie.armourers_workshop.api.common.painting.IPaintType;
 import moe.plushie.armourers_workshop.api.common.skin.cubes.ICubeColour;
 import moe.plushie.armourers_workshop.client.render.IRenderBuffer;
 import moe.plushie.armourers_workshop.client.render.ModRenderHelper;
 import moe.plushie.armourers_workshop.client.render.RenderBridge;
-import moe.plushie.armourers_workshop.common.items.ModItems;
+import moe.plushie.armourers_workshop.common.init.items.ModItems;
 import moe.plushie.armourers_workshop.common.lib.LibModInfo;
 import moe.plushie.armourers_workshop.common.painting.IBlockPainter;
-import moe.plushie.armourers_workshop.common.painting.PaintRegistry;
-import moe.plushie.armourers_workshop.common.painting.PaintType;
+import moe.plushie.armourers_workshop.common.painting.PaintTypeRegistry;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntityColourable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -29,27 +29,27 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class RenderBlockColourable extends TileEntitySpecialRenderer<TileEntityColourable> {
-    
+
     public static final ResourceLocation MARKERS = new ResourceLocation(LibModInfo.ID.toLowerCase(), "textures/tile-entities/markers.png");
     public static float markerAlpha = 0F;
     private static long lastWorldTimeUpdate;
-    
+
     private final IRenderBuffer renderer;
-    
+
     public RenderBlockColourable() {
         renderer = RenderBridge.INSTANCE;
     }
-    
+
     @Override
     public void render(TileEntityColourable tileEntity, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         updateAlpha(tileEntity);
         if (!(markerAlpha > 0)) {
             return;
         }
-        
+
         ICubeColour cubeColour = tileEntity.getColour();
         GlStateManager.pushAttrib();
-        //ModRenderHelper.disableLighting();
+        // ModRenderHelper.disableLighting();
         GL11.glDisable(GL11.GL_LIGHTING);
         ModRenderHelper.enableAlphaBlend();
         GlStateManager.color(1F, 1F, 1F, markerAlpha);
@@ -59,7 +59,7 @@ public class RenderBlockColourable extends TileEntitySpecialRenderer<TileEntityC
             EnumFacing dir = EnumFacing.byIndex(i);
             int paintType = cubeColour.getPaintType(i) & 0xFF;
             if (paintType != 255) {
-                PaintType pt = PaintRegistry.getPaintTypeFromIndex(paintType);
+                IPaintType pt = PaintTypeRegistry.getInstance().getPaintTypeFromIndex(paintType);
                 renderFaceWithMarker(renderer, x, y, z, dir, pt.getMarkerIndex());
             }
         }
@@ -70,7 +70,7 @@ public class RenderBlockColourable extends TileEntitySpecialRenderer<TileEntityC
         RenderHelper.enableStandardItemLighting();
         GlStateManager.popAttrib();
     }
-    
+
     public static void updateAlpha(TileEntity tileEntity) {
         if (lastWorldTimeUpdate != tileEntity.getWorld().getTotalWorldTime()) {
             lastWorldTimeUpdate = tileEntity.getWorld().getTotalWorldTime();
@@ -87,18 +87,18 @@ public class RenderBlockColourable extends TileEntitySpecialRenderer<TileEntityC
             }
         }
     }
-    
+
     public static void renderFaceWithMarker(IRenderBuffer renderer, double x, double y, double z, EnumFacing face, int marker) {
         Tessellator tess = Tessellator.getInstance();
         float tileScale = 0.125F;
-        float ySrc = (float) Math.floor((double)marker / 8F);
+        float ySrc = (float) Math.floor((double) marker / 8F);
         float xSrc = marker - (ySrc * 8);
         float xStart = tileScale * xSrc;
         float yStart = tileScale * ySrc;
         float xEnd = xStart + tileScale * 1;
         float yEnd = yStart + tileScale * 1;
         float offset = 0.001F;
-        
+
         switch (face) {
         case DOWN:
             tess.getBuffer().pos(x, y - offset, z).tex(xStart, yEnd).endVertex();
@@ -140,7 +140,7 @@ public class RenderBlockColourable extends TileEntitySpecialRenderer<TileEntityC
             renderer.endVertex();
             break;
         case WEST:
-            renderer.addVertexWithUV(x - offset, y, z , xStart, yEnd);
+            renderer.addVertexWithUV(x - offset, y, z, xStart, yEnd);
             renderer.endVertex();
             renderer.addVertexWithUV(x - offset, y, z + 1F, xEnd, yEnd);
             renderer.endVertex();
@@ -161,7 +161,7 @@ public class RenderBlockColourable extends TileEntitySpecialRenderer<TileEntityC
             break;
         }
     }
-    
+
     private static boolean isPlayerHoldingPaintingTool() {
         EntityPlayerSP player = Minecraft.getMinecraft().player;
         ItemStack stack = player.getHeldItemMainhand();
@@ -169,9 +169,11 @@ public class RenderBlockColourable extends TileEntitySpecialRenderer<TileEntityC
             Item item = stack.getItem();
             if (item instanceof IBlockPainter) {
                 return true;
-            } else if (item == ModItems.colourPicker) {
+            } else if (item == ModItems.COLOUR_PICKER) {
                 return true;
-            } else if (item == ModItems.blockMarker) {
+            } else if (item == ModItems.BLOCK_MARKER) {
+                return true;
+            } else if (item == ModItems.SOAP) {
                 return true;
             }
         }

@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
 
+import moe.plushie.armourers_workshop.common.capability.entityskin.EntitySkinCapability;
 import moe.plushie.armourers_workshop.common.holiday.Holiday;
 import moe.plushie.armourers_workshop.common.holiday.ModHolidays;
 import moe.plushie.armourers_workshop.common.lib.LibModInfo;
@@ -55,6 +56,7 @@ public class ConfigHandler {
     public static boolean disableDollRecipe;
     public static boolean disableSkinningRecipes;
     public static boolean hideDollFromCreativeTabs;
+    public static boolean hideGiantFromCreativeTabs;
     public static boolean enableRecoveringSkins;
     
     // Holiday events
@@ -173,7 +175,7 @@ public class ConfigHandler {
         wardrobeTabDyes = config.getBoolean("wardrobeTabDyes", CATEGORY_WARDROBE, true,
                 "Enable the wardrobe dyes tab.");
         
-        wardrobeStartingSlots = config.getInt("wardrobeStartingSlots", CATEGORY_WARDROBE, 3, 1, 8,
+        wardrobeStartingSlots = config.getInt("wardrobeStartingSlots", CATEGORY_WARDROBE, 3, 1, EntitySkinCapability.MAX_SLOTS_PER_SKIN_TYPE,
                 "Number of slot columns the player starts with for skins.");
         
         wardrobeDropSkinsOnDeath = config.getInt("wardrobeDropSkinsOnDeath", CATEGORY_WARDROBE, 0, 0, 2,
@@ -215,6 +217,9 @@ public class ConfigHandler {
         
         hideDollFromCreativeTabs = config.getBoolean("hideDollFromCreativeTabs", CATEGORY_RECIPE, true,
                 "Hides the doll block from the creative tab and NEI.");
+        
+        hideGiantFromCreativeTabs = config.getBoolean("hideGiantFromCreativeTabs", CATEGORY_RECIPE, true,
+                "Hides the giant block from the creative tab and NEI.");
         
         enableRecoveringSkins = config.getBoolean("enableRecoveringSkins", CATEGORY_RECIPE, false,
                 "Enable copying the skin off an item in the skinning table");

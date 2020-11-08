@@ -1,13 +1,9 @@
 package moe.plushie.armourers_workshop.client.gui.globallibrary.panels;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -19,132 +15,136 @@ import moe.plushie.armourers_workshop.client.gui.controls.GuiIconButton;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiPanel;
 import moe.plushie.armourers_workshop.client.gui.globallibrary.GuiGlobalLibrary;
 import moe.plushie.armourers_workshop.client.gui.globallibrary.GuiGlobalLibrary.Screen;
+import moe.plushie.armourers_workshop.client.lib.LibGuiResources;
 import moe.plushie.armourers_workshop.common.lib.LibModInfo;
-import moe.plushie.armourers_workshop.common.library.global.DownloadUtils.DownloadJsonMultipartForm;
-import moe.plushie.armourers_workshop.common.library.global.MultipartForm;
-import moe.plushie.armourers_workshop.common.skin.data.serialize.SkinSerializer;
+import moe.plushie.armourers_workshop.common.library.global.task.GlobalTaskSkinSearch;
+import moe.plushie.armourers_workshop.common.library.global.task.GlobalTaskSkinSearch.SearchColumnType;
+import moe.plushie.armourers_workshop.common.library.global.task.GlobalTaskSkinSearch.SearchOrderType;
 import moe.plushie.armourers_workshop.common.skin.type.SkinTypeRegistry;
 import moe.plushie.armourers_workshop.utils.TranslateUtils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.client.config.GuiButtonExt;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
-    
-    private static final ResourceLocation BUTTON_TEXTURES = new ResourceLocation(LibModInfo.ID.toLowerCase(), "textures/gui/global-library.png");
-    protected static final String BASE_URL = "http://plushie.moe/armourers_workshop/";
-    private static final String SEARCH_URL = BASE_URL + "skin-search-page.php";
-    
-    protected final CompletionService<JsonObject> pageCompletion;
-    
+
+    private static final ResourceLocation BUTTON_TEXTURES = new ResourceLocation(LibGuiResources.GUI_GLOBAL_LIBRARY);
+    private static final ResourceLocation TEXTURE_BUTTONS = new ResourceLocation(LibGuiResources.CONTROL_BUTTONS);
+
     protected final GuiControlSkinPanel skinPanelResults;
-    
+
     protected GuiIconButton iconButtonSmall;
     protected GuiIconButton iconButtonMedium;
     protected GuiIconButton iconButtonLarge;
-    
-    protected static int iconScale = 110;
-    
+
+    protected static int iconScale = 60;
+
     protected String search = null;
     protected ISkinType skinType = null;
+    protected SearchColumnType searchOrderColumn = null;
+    protected SearchOrderType searchOrder = null;
+
     protected JsonArray[] pageList;
     protected HashSet<Integer> downloadedPageList;
     protected JsonArray jsonCurrentPage;
     protected int currentPageIndex = 0;
-    protected int totalPages = 0;
+    protected int totalPages = -1;
     protected int totalResults = 0;
-    
+
     public GuiGlobalLibraryPanelSearchResults(GuiScreen parent, int x, int y, int width, int height) {
         super(parent, x, y, width, height);
-        pageCompletion = new ExecutorCompletionService<JsonObject>(((GuiGlobalLibrary)parent).jsonDownloadExecutor);
         skinPanelResults = new GuiControlSkinPanel();
         pageList = null;
         downloadedPageList = new HashSet<Integer>();
     }
-    
-    public void doSearch(String search, ISkinType skinType) {
+
+    public void doSearch(String search, ISkinType skinType, SearchColumnType searchOrderColumn, SearchOrderType searchOrder) {
         clearResults();
         this.search = search;
         this.skinType = skinType;
+        this.searchOrderColumn = searchOrderColumn;
+        this.searchOrder = searchOrder;
         if (this.search == null) {
             return;
         }
+        ((GuiGlobalLibrary) parent).panelSearchBox.updateDropDowns(searchOrderColumn, searchOrder);
         fetchPage(0);
     }
-    
+
     public void clearResults() {
         search = null;
         skinType = null;
         pageList = null;
         jsonCurrentPage = null;
         currentPageIndex = 0;
-        totalPages = 0;
+        totalPages = -1;
         totalResults = 0;
         skinPanelResults.clearIcons();
         downloadedPageList.clear();
     }
 
     protected void resize() {
+        refresh();
+    }
+
+    public void refresh() {
         String thisSearch = search;
         ISkinType thisSkinType = skinType;
+        SearchColumnType thisSearchOrderColumn = searchOrderColumn;
+        SearchOrderType thisSearchOrder = searchOrder;
         int thisPage = currentPageIndex;
         clearResults();
-        doSearch(thisSearch, thisSkinType);
+        doSearch(thisSearch, thisSkinType, thisSearchOrderColumn, thisSearchOrder);
     }
-    
+
     protected void fetchPage(int pageIndex) {
         if (!downloadedPageList.contains(pageIndex)) {
             downloadedPageList.add(pageIndex);
         } else {
             return;
         }
-        try {
-            String searchUrl = SEARCH_URL;
-            searchUrl += "?search=" + URLEncoder.encode(search, "UTF-8");
-            searchUrl += "&maxFileVersion=" + String.valueOf(SkinSerializer.MAX_FILE_VERSION);
-            searchUrl += "&pageIndex=" + String.valueOf(pageIndex);
-            searchUrl += "&pageSize=" + String.valueOf(skinPanelResults.getIconCount());
-            ArrayList<ISkinType> skinTypes = SkinTypeRegistry.INSTANCE.getRegisteredSkinTypes();
-            String searchTypes = "";
-            if (skinType == null) {
-                for (int i = 0; i < skinTypes.size(); i++) {
-                    searchTypes += (skinTypes.get(i).getRegistryName());
-                    if (i < skinTypes.size() - 1) {
-                        searchTypes += ";";
-                    }
+        ArrayList<ISkinType> skinTypes = SkinTypeRegistry.INSTANCE.getRegisteredSkinTypes();
+        String searchTypes = "";
+        if (skinType == null) {
+            for (int i = 0; i < skinTypes.size(); i++) {
+                searchTypes += (skinTypes.get(i).getRegistryName());
+                if (i < skinTypes.size() - 1) {
+                    searchTypes += ";";
                 }
-            } else {
-                searchTypes = skinType.getRegistryName();
+            }
+        } else {
+            searchTypes = skinType.getRegistryName();
+        }
+        GlobalTaskSkinSearch taskSkinSearch = new GlobalTaskSkinSearch(search, searchTypes, pageIndex, skinPanelResults.getIconCount());
+        taskSkinSearch.setSearchOrderColumn(searchOrderColumn);
+        taskSkinSearch.setSearchOrder(searchOrder);
+        taskSkinSearch.createTaskAndRun(new FutureCallback<JsonObject>() {
+
+            @Override
+            public void onSuccess(JsonObject result) {
+                Minecraft.getMinecraft().addScheduledTask(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        onPageJsonDownload(result);
+                    }
+                });
             }
 
-            MultipartForm multipartForm = new MultipartForm(searchUrl);
-            multipartForm.addText("searchTypes", searchTypes);
-            pageCompletion.submit(new DownloadJsonMultipartForm(multipartForm));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    @Override
-    public void update() {
-        Future<JsonObject> futureJson = pageCompletion.poll();
-        if (futureJson!= null) {
-            try {
-                JsonObject pageJson = futureJson.get();
-                if (pageJson != null) {
-                    onPageJsonDownload(pageJson);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            @Override
+            public void onFailure(Throwable t) {
+                t.printStackTrace();
+                // NO-OP
             }
-        }
+        });
     }
-    
-    private void onPageJsonDownload(JsonObject pageJson) {
+
+    protected void onPageJsonDownload(JsonObject pageJson) {
         if (pageJson.has("totalPages")) {
             totalPages = pageJson.get("totalPages").getAsInt();
         }
@@ -153,7 +153,7 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
         }
         int pageIndex = 0;
         if (pageJson.has("currentPageIndex")) {
-            
+
             pageIndex = pageJson.get("currentPageIndex").getAsInt();
             if (pageIndex == 0 & totalPages > 1) {
                 fetchPage(1);
@@ -164,11 +164,13 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
             if (pageList == null) {
                 pageList = new JsonArray[totalPages];
             }
-            pageList[pageIndex] = pageResults;
-            updateSkinForPage();
+            if (totalPages != 0) {
+                pageList[pageIndex] = pageResults;
+                updateSkinForPage();
+            }
         }
     }
-    
+
     @Override
     public GuiPanel setSize(int width, int height) {
         boolean resized = width != this.width | height != this.height;
@@ -179,37 +181,45 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
         }
         return this;
     }
-    
+
     @Override
     public void initGui() {
         super.initGui();
-        
-        String guiName = ((GuiGlobalLibrary)parent).getGuiName();
+
+        String guiName = ((GuiGlobalLibrary) parent).getGuiName();
         buttonList.clear();
-        
-        skinPanelResults.init(x + 5, this.y + 24, width - 10, height - 52);
+
+        skinPanelResults.init(x + 2, this.y + 20, width - 4, height - 40);
         skinPanelResults.setIconSize(iconScale);
         skinPanelResults.setPanelPadding(0);
         skinPanelResults.setShowName(true);
-        
-        iconButtonSmall = new GuiIconButton(parent, 0, x + width - 21 * 3, y + 5, 16, 16, GuiHelper.getLocalizedControlName(guiName, "searchResults.small"), BUTTON_TEXTURES);
-        iconButtonSmall.setIconLocation(51, 0, 16, 16);
-        
-        iconButtonMedium = new GuiIconButton(parent, 0, x + width - 21 * 2, y + 5, 16, 16, GuiHelper.getLocalizedControlName(guiName, "searchResults.medium"), BUTTON_TEXTURES);
-        iconButtonMedium.setIconLocation(51, 17, 16, 16);
-        
-        iconButtonLarge = new GuiIconButton(parent, 0, x + width - 21, y + 5, 16, 16, GuiHelper.getLocalizedControlName(guiName, "searchResults.large"), BUTTON_TEXTURES);
-        iconButtonLarge.setIconLocation(51, 34, 16, 16);
-        
+
+        iconButtonSmall = new GuiIconButton(parent, 0, x + width - 21 * 3, y + 2, 16, 16, GuiHelper.getLocalizedControlName(guiName, "searchResults.small"), BUTTON_TEXTURES);
+        iconButtonSmall.setIconLocation(48, 0, 16, 16);
+
+        iconButtonMedium = new GuiIconButton(parent, 0, x + width - 21 * 2, y + 2, 16, 16, GuiHelper.getLocalizedControlName(guiName, "searchResults.medium"), BUTTON_TEXTURES);
+        iconButtonMedium.setIconLocation(48, 17, 16, 16);
+
+        iconButtonLarge = new GuiIconButton(parent, 0, x + width - 21, y + 2, 16, 16, GuiHelper.getLocalizedControlName(guiName, "searchResults.large"), BUTTON_TEXTURES);
+        iconButtonLarge.setIconLocation(48, 34, 16, 16);
+
         buttonList.add(iconButtonSmall);
         buttonList.add(iconButtonMedium);
         buttonList.add(iconButtonLarge);
         buttonList.add(skinPanelResults);
-        
-        buttonList.add(new GuiButtonExt(1, x + 5, y + height - 25, 80, 20, "<<"));
-        buttonList.add(new GuiButtonExt(2, x + width - 85, y + height - 25, 80, 20, ">>"));
+
+        GuiIconButton buttonPrevious = new GuiIconButton(parent, 1, x + 2, y + height - 18, 16, 16, I18n.format(LibGuiResources.Controls.BUTTON_PREVIOUS), TEXTURE_BUTTONS);
+        buttonPrevious.setIconLocation(208, 80, 16, 16);
+        buttonPrevious.setDrawButtonBackground(false);
+
+        GuiIconButton buttonNext = new GuiIconButton(parent, 2, x + width - 18, y + height - 18, 16, 16, I18n.format(LibGuiResources.Controls.BUTTON_NEXT), TEXTURE_BUTTONS);
+        buttonNext.setIconLocation(208, 96, 16, 16);
+        buttonNext.setDrawButtonBackground(false);
+
+        buttonList.add(buttonPrevious);
+        buttonList.add(buttonNext);
     }
-    
+
     @Override
     protected void actionPerformed(GuiButton button) {
         if (button.id == 1) {
@@ -222,28 +232,28 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
             }
         }
         if (button == iconButtonSmall) {
-            iconScale = 50;
+            iconScale = 30;
             skinPanelResults.setIconSize(iconScale);
             resize();
         }
         if (button == iconButtonMedium) {
-            iconScale = 80;
+            iconScale = 60;
             skinPanelResults.setIconSize(iconScale);
             resize();
         }
         if (button == iconButtonLarge) {
-            iconScale = 110;
+            iconScale = 90;
             skinPanelResults.setIconSize(iconScale);
             resize();
         }
         if (button == skinPanelResults) {
-            SkinIcon skinIcon = ((GuiControlSkinPanel)button).getLastPressedSkinIcon();
+            SkinIcon skinIcon = ((GuiControlSkinPanel) button).getLastPressedSkinIcon();
             if (skinIcon != null) {
-                ((GuiGlobalLibrary)parent).panelSkinInfo.displaySkinInfo(skinIcon.getSkinJson(), Screen.SEARCH);
+                ((GuiGlobalLibrary) parent).panelSkinInfo.displaySkinInfo(skinIcon.getSkinJson(), Screen.SEARCH);
             }
         }
     }
-    
+
     protected void changePage(int pageIndex) {
         if (pageIndex < totalPages & pageIndex >= 0) {
             this.currentPageIndex = pageIndex;
@@ -256,7 +266,7 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
         }
         updateSkinForPage();
     }
-    
+
     protected void updateSkinForPage() {
         jsonCurrentPage = getJsonForPage(currentPageIndex);
         if (jsonCurrentPage != null) {
@@ -273,7 +283,7 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
             }
         }
     }
-    
+
     private JsonArray getJsonForPage(int pageIndex) {
         if (pageList != null) {
             if (pageIndex >= 0 & pageIndex < pageList.length) {
@@ -283,7 +293,7 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
         return null;
 
     }
-    
+
     @Override
     public void draw(int mouseX, int mouseY, float partialTickTime) {
         if (this.getClass().equals(GuiGlobalLibraryPanelSearchResults.class)) {
@@ -292,16 +302,19 @@ public class GuiGlobalLibraryPanelSearchResults extends GuiPanel {
             }
             drawGradientRect(this.x, this.y, this.x + this.width, this.y + height, 0xC0101010, 0xD0101010);
             super.draw(mouseX, mouseY, partialTickTime);
-            
+
             int maxPages = totalPages;
             int totalSkins = totalResults;
-            
-            String guiName = ((GuiGlobalLibrary)parent).getGuiName();
+
+            String guiName = ((GuiGlobalLibrary) parent).getGuiName();
             String unlocalizedName = "inventory." + LibModInfo.ID.toLowerCase() + ":" + guiName + "." + "searchResults.results";
-            
+
             String resultsText = TranslateUtils.translate(unlocalizedName, currentPageIndex + 1, maxPages, totalSkins);
-            if (jsonCurrentPage == null) {
+            if (jsonCurrentPage == null & totalPages == -1) {
                 resultsText = GuiHelper.getLocalizedControlName(guiName, "searchResults.label.searching");
+            }
+            if (totalPages == 0) {
+                resultsText = GuiHelper.getLocalizedControlName(guiName, "searchResults.label.no_results");
             }
             fontRenderer.drawString(resultsText, x + 5, y + 6, 0xFFEEEEEE);
         } else {

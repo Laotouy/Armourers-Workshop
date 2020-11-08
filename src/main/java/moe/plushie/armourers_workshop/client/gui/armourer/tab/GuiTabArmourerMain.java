@@ -11,6 +11,7 @@ import moe.plushie.armourers_workshop.client.gui.controls.GuiDropDownList;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiDropDownList.DropDownListItem;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiDropDownList.IDropDownListCallback;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiHelp;
+import moe.plushie.armourers_workshop.client.gui.controls.GuiIconButton;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiTabPanel;
 import moe.plushie.armourers_workshop.client.lib.LibGuiResources;
 import moe.plushie.armourers_workshop.common.lib.LibModInfo;
@@ -25,7 +26,6 @@ import moe.plushie.armourers_workshop.common.tileentities.TileEntityArmourer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
@@ -35,29 +35,30 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCallback {
+public class GuiTabArmourerMain extends GuiTabPanel<GuiArmourer> implements IDropDownListCallback {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(LibGuiResources.ARMOURER);
-    
+    private static final ResourceLocation TEXTURE = new ResourceLocation(LibGuiResources.GUI_ARMOURER);
+    private static final ResourceLocation TEXTURE_BUTTONS = new ResourceLocation(LibGuiResources.CONTROL_BUTTONS);
+
     private final TileEntityArmourer tileEntity;
-    
+
     private GuiDropDownList dropDownSkinType;
     private GuiTextField textItemName;
     private GuiTextField textFlavour;
     private boolean resetting;
-    
-    public GuiTabArmourerMain(int tabId, GuiScreen parent) {
+
+    public GuiTabArmourerMain(int tabId, GuiArmourer parent) {
         super(tabId, parent, false);
-        tileEntity = ((GuiArmourer)parent).tileEntity;
+        tileEntity = parent.tileEntity;
     }
-    
+
     @Override
     public void initGui(int xPos, int yPos, int width, int height) {
         super.initGui(xPos, yPos, width, height);
         String guiName = tileEntity.getName();
-        
+
         buttonList.clear();
-        
+
         SkinTypeRegistry str = SkinTypeRegistry.INSTANCE;
         dropDownSkinType = new GuiDropDownList(0, 7, 21, 50, "", this);
         ArrayList<ISkinType> skinList = str.getRegisteredSkinTypes();
@@ -76,34 +77,40 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
             }
         }
         buttonList.add(dropDownSkinType);
-        
+
+        // TODO Make button icons for save/load buttons.
+        GuiIconButton buttonSave = new GuiIconButton(parent, 13, 88, 16, 16, 16, GuiHelper.getLocalizedControlName(guiName, "save"), TEXTURE_BUTTONS);
+        GuiIconButton buttonLoad = new GuiIconButton(parent, 14, 88, 16 + 13, 16, 16, GuiHelper.getLocalizedControlName(guiName, "load"), TEXTURE_BUTTONS);
+        // buttonList.add(buttonSave);
+        // buttonList.add(buttonLoad);
+
         buttonList.add(new GuiButtonExt(13, 88, 16, 50, 12, GuiHelper.getLocalizedControlName(guiName, "save")));
         buttonList.add(new GuiButtonExt(14, 88, 16 + 13, 50, 12, GuiHelper.getLocalizedControlName(guiName, "load")));
-        
+
         textItemName = new GuiTextField(-1, fontRenderer, x + 8, y + 58, 158, 16);
         textItemName.setMaxStringLength(40);
         textItemName.setText(SkinProperties.PROP_ALL_CUSTOM_NAME.getValue(tileEntity.getSkinProps()));
-        
+
         textFlavour = new GuiTextField(-1, fontRenderer, x + 8, y + 90, 158, 16);
         textFlavour.setMaxStringLength(40);
         textFlavour.setText(SkinProperties.PROP_ALL_FLAVOUR_TEXT.getValue(tileEntity.getSkinProps()));
-        
+
         buttonList.add(new GuiHelp(parent, 0, 6, 12, GuiHelper.getLocalizedControlName(guiName, "main.help.skinType")));
         buttonList.add(new GuiHelp(parent, 0, 81, 18, GuiHelper.getLocalizedControlName(guiName, "main.help.save")));
         buttonList.add(new GuiHelp(parent, 0, 81, 30, GuiHelper.getLocalizedControlName(guiName, "main.help.load")));
         buttonList.add(new GuiHelp(parent, 0, 6, 48, GuiHelper.getLocalizedControlName(guiName, "main.help.itemName")));
         buttonList.add(new GuiHelp(parent, 0, 6, 80, GuiHelper.getLocalizedControlName(guiName, "main.help.itemFlavour")));
     }
-    
+
     public static class DropDownItemSkin extends DropDownListItem {
 
         private final ISkinType skinType;
-        
+
         public DropDownItemSkin(String displayText, String tag, boolean enabled, ISkinType skinType) {
             super(displayText, tag, enabled);
             this.skinType = skinType;
         }
-        
+
         @Override
         public void drawItem(Minecraft mc, GuiDropDownList parent, int x, int y, int mouseX, int mouseY, float partial, boolean topItem) {
             int textWidth = parent.width - 8;
@@ -112,7 +119,7 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
             if (topItem) {
                 mc.fontRenderer.drawString(displayText, x, y, textColour);
             } else {
-                //textWidth -= 7;
+                // textWidth -= 7;
                 if (!enabled) {
                     textColour = 0xFFCC0000;
                 } else {
@@ -130,7 +137,7 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
             }
         }
     }
-    
+
     @Override
     public boolean mouseClicked(int mouseX, int mouseY, int button) {
         boolean clicked = super.mouseClicked(mouseX, mouseY, button);
@@ -144,14 +151,14 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
                 if (textFlavour.isFocused()) {
                     textFlavour.setText("");
                 }
-            } 
+            }
         }
         return clicked;
     }
-    
+
     int fidgCount = 0;
-    String[] fidgMessage = new String[] {"STOP!", "STOP ALREADY", "I SAID STOP!"};
-    
+    String[] fidgMessage = new String[] { "STOP!", "STOP ALREADY", "I SAID STOP!" };
+
     @Override
     public boolean keyTyped(char c, int keycode) {
         boolean typed = super.keyTyped(c, keycode);
@@ -171,7 +178,7 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
                     fidgCount++;
                 }
             }
-            
+
             boolean textChanged = false;
             if (!sendTextName.equals(SkinProperties.PROP_ALL_CUSTOM_NAME.getValue(skinProps))) {
                 textChanged = true;
@@ -187,7 +194,7 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
         }
         return typed;
     }
-    
+
     @Override
     protected void actionPerformed(GuiButton button) {
         switch (button.id) {
@@ -199,7 +206,9 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
                 // Load
                 // loadedArmourItem = true;
             }
-            PacketHandler.networkWrapper.sendToServer(new MessageClientGuiButton((byte) button.id)); 
+            if (button.id > 0) {
+                PacketHandler.networkWrapper.sendToServer(new MessageClientGuiButton((byte) button.id));
+            }
             break;
         }
     }
@@ -213,12 +222,12 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
         drawTexturedModalRect(this.x + 63, this.y + 20, 238, 0, 18, 18);
         // output slot
         drawTexturedModalRect(this.x + 142, this.y + 16, 230, 18, 26, 26);
-        
+
         this.fontRenderer.drawString(I18n.format("container.inventory", new Object[0]), this.x + 8, this.y + this.height - 96 + 2, 4210752);
         textItemName.drawTextBox();
         textFlavour.drawTextBox();
     }
-    
+
     public void resetValues(SkinProperties skinProperties) {
         resetting = true;
         String newNameText = SkinProperties.PROP_ALL_CUSTOM_NAME.getValue(skinProperties);
@@ -239,39 +248,42 @@ public class GuiTabArmourerMain extends GuiTabPanel implements IDropDownListCall
         }
         resetting = false;
     }
-    
+
     @Override
     public void drawForegroundLayer(int mouseX, int mouseY, float partialTickTime) {
         super.drawForegroundLayer(mouseX, mouseY, partialTickTime);
-    
+
         String itemNameLabel = GuiHelper.getLocalizedControlName(tileEntity.getName(), "label.itemName");
-        
+
         String labelFlavour = GuiHelper.getLocalizedControlName(tileEntity.getName(), "label.flavour");
         String versionLabel = LibModInfo.RELEASE_TYPE.toString() + ": " + LibModInfo.MOD_VERSION;
-        
+
         this.fontRenderer.drawString(itemNameLabel, 14, 48, 4210752);
         this.fontRenderer.drawString(labelFlavour, 14, 80, 4210752);
-        
+
         int versionWidth = fontRenderer.getStringWidth(versionLabel);
         this.fontRenderer.drawString(versionLabel, this.width - versionWidth - 7, this.height - 96 + 2, 4210752);
         GlStateManager.color(1, 1, 1, 1);
         dropDownSkinType.drawForeground(mc, mouseX - x, mouseY - y, partialTickTime);
-        
 
+        GL11.glPushMatrix();
+        GL11.glTranslatef(-x, -y, 0F);
         for (int i = 0; i < buttonList.size(); i++) {
-            GuiButton button = (GuiButton) buttonList.get(i);
+            GuiButton button = buttonList.get(i);
             if (button instanceof GuiHelp) {
-                ((GuiHelp)button).drawRollover(mc, mouseX - x, mouseY - y);
+                ((GuiHelp) button).drawRollover(mc, mouseX - x, mouseY - y);
             }
         }
+        GL11.glPopMatrix();
+
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
-    
+
     @Override
     public void onDropDownListChanged(GuiDropDownList dropDownList) {
         DropDownListItem listItem = dropDownList.getListSelectedItem();
         ISkinType skinType = SkinTypeRegistry.INSTANCE.getSkinTypeFromRegistryName(listItem.tag);
-        ((GuiArmourer)parent).skinTypeUpdate(skinType);
+        parent.skinTypeUpdate(skinType);
         PacketHandler.networkWrapper.sendToServer(new MessageClientGuiSetArmourerSkinType(skinType));
     }
 }

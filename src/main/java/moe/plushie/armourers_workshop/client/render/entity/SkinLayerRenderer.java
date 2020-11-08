@@ -2,6 +2,9 @@ package moe.plushie.armourers_workshop.client.render.entity;
 
 import org.lwjgl.opengl.GL11;
 
+import moe.plushie.armourers_workshop.api.common.IExtraColours;
+import moe.plushie.armourers_workshop.api.common.capability.IEntitySkinCapability;
+import moe.plushie.armourers_workshop.api.common.capability.IWardrobeCap;
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDescriptor;
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDye;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinType;
@@ -10,9 +13,7 @@ import moe.plushie.armourers_workshop.client.render.SkinPartRenderData;
 import moe.plushie.armourers_workshop.client.render.SkinPartRenderer;
 import moe.plushie.armourers_workshop.client.skin.cache.ClientSkinCache;
 import moe.plushie.armourers_workshop.common.capability.entityskin.EntitySkinCapability;
-import moe.plushie.armourers_workshop.common.capability.entityskin.IEntitySkinCapability;
 import moe.plushie.armourers_workshop.common.capability.wardrobe.ExtraColours;
-import moe.plushie.armourers_workshop.common.capability.wardrobe.IWardrobeCap;
 import moe.plushie.armourers_workshop.common.capability.wardrobe.WardrobeCap;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
 import moe.plushie.armourers_workshop.common.skin.data.SkinDye;
@@ -59,6 +60,7 @@ public abstract class SkinLayerRenderer<E extends EntityLivingBase, R extends Re
     protected abstract void setRotTranForPartType(E entitylivingbaseIn, ISkinType skinType, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale);
     
     protected void renderSkinType(EntityLivingBase entity, ISkinType skinType, IEntitySkinCapability skinCapability, IWardrobeCap wardrobeCap) {
+        double distance = entity.getDistance(Minecraft.getMinecraft().player);
         for (int i = 0; i < skinCapability.getSlotCountForSkinType(skinType); i++) {
             ISkinDescriptor skinDescriptor = skinCapability.getSkinDescriptor(skinType, i);
             if (skinDescriptor == null) {
@@ -70,7 +72,7 @@ public abstract class SkinLayerRenderer<E extends EntityLivingBase, R extends Re
                 continue;
             }
             
-            ExtraColours extraColours = ExtraColours.EMPTY_COLOUR;
+            IExtraColours extraColours = ExtraColours.EMPTY_COLOUR;
             ISkinDye dye = skinDescriptor.getSkinDye();
             if (wardrobeCap != null) {
                 extraColours = wardrobeCap.getExtraColours();
@@ -84,7 +86,7 @@ public abstract class SkinLayerRenderer<E extends EntityLivingBase, R extends Re
             
             GL11.glEnable(GL11.GL_NORMALIZE);
             for (int partIndex = 0; partIndex < skin.getParts().size(); partIndex++) {
-                SkinPartRenderer.INSTANCE.renderPart(new SkinPartRenderData(skin.getParts().get(partIndex), SCALE, dye, extraColours, 0, false, false, false, null));
+                SkinPartRenderer.INSTANCE.renderPart(new SkinPartRenderData(skin.getParts().get(partIndex), SCALE, dye, extraColours, distance, false, false, false, null));
             }
             GL11.glDisable(GL11.GL_NORMALIZE);
         }

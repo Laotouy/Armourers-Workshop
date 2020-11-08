@@ -3,15 +3,15 @@ package moe.plushie.armourers_workshop.common.world;
 import java.util.ArrayList;
 
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDescriptor;
-import moe.plushie.armourers_workshop.common.blocks.BlockSkinnable;
-import moe.plushie.armourers_workshop.common.blocks.ModBlocks;
+import moe.plushie.armourers_workshop.common.init.blocks.BlockSkinnable;
+import moe.plushie.armourers_workshop.common.init.blocks.ModBlocks;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
 import moe.plushie.armourers_workshop.common.skin.data.SkinProperties;
 import moe.plushie.armourers_workshop.common.skin.type.SkinTypeRegistry;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntitySkinnable;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntitySkinnableChild;
 import moe.plushie.armourers_workshop.utils.SkinUtils;
-import moe.plushie.armourers_workshop.utils.UtilPlayer;
+import moe.plushie.armourers_workshop.utils.PlayerUtils;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -46,11 +46,11 @@ public final class BlockSkinPlacementHelper {
         if (world.isRemote) {
             return true;
         }
-        EnumFacing dir = UtilPlayer.getDirectionSide(player).getOpposite();
+        EnumFacing dir = PlayerUtils.getDirectionSide(player).getOpposite();
         
-        BlockSkinnable targetBlock = (BlockSkinnable) ModBlocks.skinnable;
+        BlockSkinnable targetBlock = (BlockSkinnable) ModBlocks.SKINNABLE;
         if (SkinProperties.PROP_BLOCK_GLOWING.getValue(skin.getProperties())) {
-            targetBlock = (BlockSkinnable) ModBlocks.skinnableGlowing;
+            targetBlock = (BlockSkinnable) ModBlocks.SKINNABLE_GLOWING;
         }
         
         boolean multiblock = SkinProperties.PROP_BLOCK_MULTIBLOCK.getValue(skin.getProperties());
@@ -93,7 +93,7 @@ public final class BlockSkinPlacementHelper {
     }
     
     private static boolean canPlaceChildren(World world, EntityPlayer player, EnumFacing sidePlacedOn, ItemStack stack, BlockPos pos, Skin skin, ISkinDescriptor descriptor, ArrayList<BlockPos> relatedBlocks) {
-        EnumFacing dir = UtilPlayer.getDirectionSide(player).getOpposite();
+        EnumFacing dir = PlayerUtils.getDirectionSide(player).getOpposite();
         for (int ix = 0; ix < 3; ix++) {
             for (int iy = 0; iy < 3; iy++) {
                 for (int iz = 0; iz < 3; iz++) {
@@ -124,13 +124,13 @@ public final class BlockSkinPlacementHelper {
     }
     
     private static void placeChild(World world, EntityPlayer player, EnumFacing sidePlacedOn, BlockPos pos, int ix, int iy, int iz, Skin skin, ISkinDescriptor descriptor, ArrayList<BlockPos> relatedBlocks) {
-        EnumFacing dir = UtilPlayer.getDirectionSide(player).getOpposite();
+        EnumFacing dir = PlayerUtils.getDirectionSide(player).getOpposite();
         
-        BlockSkinnable targetBlock = (BlockSkinnable) ModBlocks.skinnableChild;
+        BlockSkinnable targetBlock = (BlockSkinnable) ModBlocks.SKINNABLE_CHILD;
         
         IBlockState state = targetBlock.getDefaultState().withProperty(BlockSkinnable.STATE_FACING, dir);
         if (SkinProperties.PROP_BLOCK_GLOWING.getValue(skin.getProperties())) {
-            targetBlock = (BlockSkinnable) ModBlocks.skinnableChildGlowing;
+            targetBlock = (BlockSkinnable) ModBlocks.SKINNABLE_CHILD_GLOWING;
         }
         
         float[] bounds = TileEntitySkinnable.getBlockBounds(skin, -ix + 2, iy, iz, dir);

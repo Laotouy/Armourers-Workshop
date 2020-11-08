@@ -13,7 +13,7 @@ public class BookChapterCredits extends BookChapterBase {
     public BookChapterCredits(IBook parentBook, String name) {
         super(parentBook, name);
     }
-    
+
     @Override
     public void createPages() {
         addCategoryPage("programing", new String[] {"RiskyKen"});
@@ -33,7 +33,8 @@ public class BookChapterCredits extends BookChapterBase {
                 "Thundercat_",
                 "skylandersking",
                 "MikaPikaaa",
-                "LillyFae"});
+                "LillyFae",
+                "andrew0030"});
         addCategoryPage("sound", new String[] {"RiskyKen", "Borro55"});
         addCategoryPage("localisations", new String[] {
                 "Ethan (zh_CN)",
@@ -47,10 +48,13 @@ public class BookChapterCredits extends BookChapterBase {
                 "BredFace (pt_BR)",
                 "Equine0x (fr_FR)",
                 "_Hoppang_ (ko_KR)",
+                "M_H_Berre (ko_KR)",
                 "BlackGear27 (es_ES)",
-                "JasonJeong (ko_KR)"});
+                "JasonJeong (ko_KR)", 
+                "SQwatermark (zh_CN)"});
+        addCategoryPage("wiki editors", new String[] {"DoomRater"});
     }
-    
+
     private void addCategoryPage(String pageName, String[] people) {
         Arrays.sort(people);
         ArrayList<String> lines = new ArrayList<String>();

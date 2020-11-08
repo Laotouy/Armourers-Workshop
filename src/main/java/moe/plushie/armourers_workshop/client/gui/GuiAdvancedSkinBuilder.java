@@ -3,13 +3,18 @@ package moe.plushie.armourers_workshop.client.gui;
 import java.io.IOException;
 
 import moe.plushie.armourers_workshop.client.gui.controls.GuiCustomSlider;
+import moe.plushie.armourers_workshop.client.gui.controls.ModGuiContainer;
+import moe.plushie.armourers_workshop.common.addons.ModAddonManager;
 import moe.plushie.armourers_workshop.common.inventory.ContainerAdvancedSkinBuilder;
+import moe.plushie.armourers_workshop.common.lib.LibBlockNames;
+import moe.plushie.armourers_workshop.common.network.PacketHandler;
+import moe.plushie.armourers_workshop.common.network.messages.client.MessageClientGuiButton;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntityAdvancedSkinBuilder;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntityAdvancedSkinBuilder.SkinPartSettings;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.Slot;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
@@ -19,8 +24,12 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class GuiAdvancedSkinBuilder extends GuiContainer implements ISlider {
-
+public class GuiAdvancedSkinBuilder extends ModGuiContainer<ContainerAdvancedSkinBuilder> implements ISlider {
+    
+    private static final int PADDING = 5;
+    private static final int INVENTORY_HEIGHT = 76;
+    private static final int INVENTORY_WIDTH = 162;
+    
     private final TileEntityAdvancedSkinBuilder tileEntity;
     
     private GuiButtonExt indexDecrease;
@@ -84,6 +93,29 @@ public class GuiAdvancedSkinBuilder extends GuiContainer implements ISlider {
         buttonList.add(rotOffsetYSlider);
         buttonList.add(rotOffsetZSlider);
         
+        int slotSize = 18;
+        
+        int neiBump = 18;
+        if (ModAddonManager.addonNEI.isVisible()) {
+            neiBump = 18;
+        } else {
+            neiBump = 0;
+        }
+        
+        //Move player inventory slots.
+        for (int x = 0; x < 9; x++) {
+            Slot slot = inventorySlots.inventorySlots.get(x);
+            slot.xPos = width - INVENTORY_WIDTH + x * 18;
+            slot.yPos = this.height + 1 - PADDING - slotSize - neiBump;
+        }
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 9; x++) {
+                Slot slot = inventorySlots.inventorySlots.get(x + y * 9 + 9);
+                slot.xPos = width - INVENTORY_WIDTH + x * 18;
+                slot.yPos = this.height + 1 - INVENTORY_HEIGHT - PADDING + y * slotSize - neiBump;
+            }
+        }
+        
         setSlidersForIndex(indexActive);
     }
     
@@ -136,6 +168,10 @@ public class GuiAdvancedSkinBuilder extends GuiContainer implements ISlider {
         if (button == indexIncrease) {
             indexActive++;
         }
+        if (button == parentDecrease) {
+            MessageClientGuiButton message = new MessageClientGuiButton((byte) 0);
+            PacketHandler.networkWrapper.sendToServer(message);
+        }
         indexActive = MathHelper.clamp(indexActive, 0, 9);
         setSlidersForIndex(indexActive);
     }
@@ -143,5 +179,10 @@ public class GuiAdvancedSkinBuilder extends GuiContainer implements ISlider {
     @Override
     public void onChangeSliderValue(GuiSlider slider) {
         setValuesForIndex(indexActive);
+    }
+
+    @Override
+    public String getName() {
+        return LibBlockNames.ADVANCED_SKIN_BUILDER;
     }
 }

@@ -10,17 +10,19 @@ import org.apache.logging.log4j.Level;
 import com.mojang.authlib.GameProfile;
 
 import moe.plushie.armourers_workshop.ArmourersWorkshop;
+import moe.plushie.armourers_workshop.api.ArmourersWorkshopApi;
 import moe.plushie.armourers_workshop.common.addons.ModAddonManager;
-import moe.plushie.armourers_workshop.common.blocks.BlockSkinnable.Seat;
-import moe.plushie.armourers_workshop.common.blocks.ModBlocks;
 import moe.plushie.armourers_workshop.common.capability.ModCapabilityManager;
 import moe.plushie.armourers_workshop.common.config.ConfigHandler;
 import moe.plushie.armourers_workshop.common.config.ConfigHandlerOverrides;
 import moe.plushie.armourers_workshop.common.config.ConfigSynchronizeHandler;
 import moe.plushie.armourers_workshop.common.crafting.CraftingManager;
+import moe.plushie.armourers_workshop.common.init.blocks.ModBlocks;
+import moe.plushie.armourers_workshop.common.init.entities.ModEntities;
+import moe.plushie.armourers_workshop.common.init.items.ModItems;
+import moe.plushie.armourers_workshop.common.init.sounds.ModSounds;
 import moe.plushie.armourers_workshop.common.inventory.ContainerSkinLibrary;
 import moe.plushie.armourers_workshop.common.inventory.ModContainer;
-import moe.plushie.armourers_workshop.common.items.ModItems;
 import moe.plushie.armourers_workshop.common.lib.LibModInfo;
 import moe.plushie.armourers_workshop.common.library.CommonLibraryManager;
 import moe.plushie.armourers_workshop.common.library.ILibraryCallback;
@@ -34,28 +36,28 @@ import moe.plushie.armourers_workshop.common.network.messages.client.MessageClie
 import moe.plushie.armourers_workshop.common.network.messages.client.MessageClientGuiSkinLibraryCommand.SkinLibraryCommand;
 import moe.plushie.armourers_workshop.common.network.messages.server.MessageServerClientCommand.CommandType;
 import moe.plushie.armourers_workshop.common.network.messages.server.MessageServerLibrarySendSkin.SendType;
-import moe.plushie.armourers_workshop.common.painting.PaintRegistry;
+import moe.plushie.armourers_workshop.common.painting.PaintTypeRegistry;
 import moe.plushie.armourers_workshop.common.permission.PermissionManager;
 import moe.plushie.armourers_workshop.common.skin.SkinExtractor;
+import moe.plushie.armourers_workshop.common.skin.advanced.AdvancedSkinRegistry;
 import moe.plushie.armourers_workshop.common.skin.cache.CommonSkinCache;
 import moe.plushie.armourers_workshop.common.skin.cubes.CubeRegistry;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
-import moe.plushie.armourers_workshop.common.skin.entity.EntitySkinHandler;
+import moe.plushie.armourers_workshop.common.skin.entity.SkinnableEntityRegisty;
 import moe.plushie.armourers_workshop.common.skin.type.SkinTypeRegistry;
 import moe.plushie.armourers_workshop.utils.ModLogger;
-import moe.plushie.armourers_workshop.utils.ModSounds;
 import moe.plushie.armourers_workshop.utils.SkinIOUtils;
+import moe.plushie.armourers_workshop.utils.SkinNBTUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.registry.EntityRegistry;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 
 @Mod.EventBusSubscriber(modid = LibModInfo.ID)
 public class CommonProxy implements ILibraryCallback {
@@ -65,11 +67,14 @@ public class CommonProxy implements ILibraryCallback {
     private File modDirectory;
     private File skinLibraryDirectory;
 
+    private PaintTypeRegistry paintTypeRegistry;
+
     private static ModItems modItems;
     private static ModBlocks modBlocks;
     private static ModSounds modSounds;
     public ILibraryManager libraryManager;
     private PermissionSystem permissionSystem;
+    private AdvancedSkinRegistry advancedSkinRegistry;
 
     public void preInit(FMLPreInitializationEvent event) {
         modConfigDirectory = new File(event.getSuggestedConfigurationFile().getParentFile(), LibModInfo.ID);
@@ -92,21 +97,27 @@ public class CommonProxy implements ILibraryCallback {
 
         ModLogger.log("user home: " + System.getProperty("user.home"));
 
-        EntityRegistry.registerModEntity(new ResourceLocation(LibModInfo.ID, "seat"), Seat.class, "seat", 1, ArmourersWorkshop.getInstance(), 10, 20, false);
-
+        ModEntities.registerEntities();
         SkinExtractor.extractSkins();
 
-        PaintRegistry.init();
+        paintTypeRegistry = new PaintTypeRegistry();
         SkinTypeRegistry.init();
         CubeRegistry.init();
+        advancedSkinRegistry = new AdvancedSkinRegistry();
 
         modItems = new ModItems();
         modBlocks = new ModBlocks();
         modSounds = new ModSounds();
 
-        EntitySkinHandler.init();
+        SkinnableEntityRegisty.init();
 
         ModCapabilityManager.register();
+
+        // Set API stuff!
+        ReflectionHelper.setPrivateValue(ArmourersWorkshopApi.class, null, SkinNBTUtils.INSTANCE, "skinNBTUtils");
+        ReflectionHelper.setPrivateValue(ArmourersWorkshopApi.class, null, SkinTypeRegistry.INSTANCE, "skinTypeRegistry");
+        ReflectionHelper.setPrivateValue(ArmourersWorkshopApi.class, null, SkinnableEntityRegisty.INSTANCE, "skinnableEntityRegisty");
+        ReflectionHelper.setPrivateValue(ArmourersWorkshopApi.class, null, paintTypeRegistry, "paintTypeRegistry");
     }
 
     public void initLibraryManager() {
@@ -145,6 +156,10 @@ public class CommonProxy implements ILibraryCallback {
 
     public void receivedCommandFromSever(CommandType command) {
 
+    }
+
+    public PaintTypeRegistry getPaintTypeRegistry() {
+        return paintTypeRegistry;
     }
 
     public void receivedAdminPanelCommand(EntityPlayer player, AdminPanelCommand command) {
@@ -278,6 +293,10 @@ public class CommonProxy implements ILibraryCallback {
 
     public File getGlobalSkinDatabaseDirectory() {
         return new File(modDirectory, "global-skin-database");
+    }
+    
+    public AdvancedSkinRegistry getAdvancedSkinRegistry() {
+        return advancedSkinRegistry;
     }
 
     @SubscribeEvent

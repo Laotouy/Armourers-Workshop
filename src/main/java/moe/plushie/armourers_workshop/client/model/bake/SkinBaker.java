@@ -4,10 +4,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import moe.plushie.armourers_workshop.api.common.painting.IPaintType;
 import moe.plushie.armourers_workshop.api.common.skin.Rectangle3D;
 import moe.plushie.armourers_workshop.client.config.ConfigHandlerClient;
-import moe.plushie.armourers_workshop.common.painting.PaintRegistry;
-import moe.plushie.armourers_workshop.common.painting.PaintType;
+import moe.plushie.armourers_workshop.common.painting.PaintTypeRegistry;
 import moe.plushie.armourers_workshop.common.skin.cubes.CubeRegistry;
 import moe.plushie.armourers_workshop.common.skin.cubes.ICube;
 import moe.plushie.armourers_workshop.common.skin.data.SkinCubeData;
@@ -33,7 +33,7 @@ public final class SkinBaker {
         return true;
     }
     
-    public static int[][][] cullFacesOnEquipmentPart(SkinPart skinPart, int modelBakingUpdateRate) {
+    public static int[][][] cullFacesOnEquipmentPart(SkinPart skinPart) {
         SkinCubeData cubeData = skinPart.getCubeData();
         cubeData.setupFaceFlags();
         skinPart.getClientSkinPartData().totalCubesInPart = new int[CubeRegistry.INSTANCE.getTotalCubes()];
@@ -41,27 +41,14 @@ public final class SkinBaker {
         Rectangle3D pb = skinPart.getPartBounds();
         int[][][] cubeArray = new int[pb.getWidth()][pb.getHeight()][pb.getDepth()];
         
-        int updates = 0;
-        
         for (int i = 0; i < cubeData.getCubeCount(); i++) {
             int cubeId = cubeData.getCubeId(i);
             byte[] cubeLoc = cubeData.getCubeLocation(i);
             skinPart.getClientSkinPartData().totalCubesInPart[cubeId] += 1;
-            int x = (int)cubeLoc[0] - pb.getX();
-            int y = (int)cubeLoc[1] - pb.getY();
-            int z = (int)cubeLoc[2] - pb.getZ();
+            int x = cubeLoc[0] - pb.getX();
+            int y = cubeLoc[1] - pb.getY();
+            int z = cubeLoc[2] - pb.getZ();
             cubeArray[x][y][z] = i + 1;
-            if (ConfigHandlerClient.slowModelBaking) {
-                updates++;
-                if (updates > modelBakingUpdateRate) {
-                    try {
-                        Thread.sleep(1);
-                        updates = 0;
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
         }
 
         ArrayDeque<Vec3i> openList = new ArrayDeque<Vec3i>();
@@ -79,17 +66,6 @@ public final class SkinBaker {
                     closedSet.add(foundLocation);
                     if (isCubeInSearchArea(foundLocation, pb)) {
                         openList.add(foundLocation);
-                    }
-                }
-            }
-            if (ConfigHandlerClient.slowModelBaking) {
-                updates++;
-                if (updates > modelBakingUpdateRate) {
-                    try {
-                        Thread.sleep(1);
-                        updates = 0;
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
                 }
             }
@@ -172,7 +148,7 @@ public final class SkinBaker {
         return false;
     }
     
-    public static void buildPartDisplayListArray(SkinPart partData, int[][] dyeColour, int[] dyeUseCount, int[][][] cubeArray, int modelBakingUpdateRate) {
+    public static void buildPartDisplayListArray(SkinPart partData, int[][] dyeColour, int[] dyeUseCount, int[][][] cubeArray) {
         boolean multipassSkinRendering = ClientProxy.useMultipassSkinRendering();
         
         ArrayList<ColouredFace>[] renderLists;
@@ -192,7 +168,7 @@ public final class SkinBaker {
          * 1 = glowing
          */
 
-        renderLists = (ArrayList<ColouredFace>[]) new ArrayList[ClientProxy.getNumberOfRenderLayers() * (lodLevels + 1)];
+        renderLists = new ArrayList[ClientProxy.getNumberOfRenderLayers() * (lodLevels + 1)];
 
         for (int i = 0; i < renderLists.length; i++) {
             renderLists[i] = new ArrayList<ColouredFace>();
@@ -222,7 +198,7 @@ public final class SkinBaker {
                         byte[] b = cubeData.getCubeColourB(i);
 
                         for (int j = 0; j < 6; j++) {
-                            PaintType type = PaintRegistry.getPaintTypeFormByte(paintType[j]);
+                            IPaintType type = PaintTypeRegistry.getInstance().getPaintTypeFormByte(paintType[j]);
                             if (type.hasAverageColourChannel()) {
                                 int index = type.getChannelIndex();
                                 dyeUseCount[index]++;

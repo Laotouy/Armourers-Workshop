@@ -25,6 +25,7 @@ public abstract class GuiPanel extends Gui {
     protected int height;
     protected boolean enabled;
     protected boolean visible;
+    protected boolean insideCheck = false;
     
     protected ArrayList<GuiButton> buttonList;
     private GuiButton selectedButton;
@@ -59,6 +60,14 @@ public abstract class GuiPanel extends Gui {
         return this;
     }
     
+    public int getWidth() {
+        return width;
+    }
+    
+    public int getHeight() {
+        return height;
+    }
+    
     public GuiPanel setVisible(boolean visible) {
         this.visible = visible;
         return this;
@@ -77,8 +86,15 @@ public abstract class GuiPanel extends Gui {
         return enabled;
     }
     
+    public boolean isInside(int x, int y) {
+        return x >= this.x & x < this.x + this.width & y >= this.y & y < this.y + this.height;
+    }
+    
     public boolean mouseClicked(int mouseX, int mouseY, int button) {
         if (!this.enabled | !this.visible) {
+            return false;
+        }
+        if (insideCheck & !isInside(mouseX, mouseY)) {
             return false;
         }
         if (button == 0) {
@@ -122,6 +138,10 @@ public abstract class GuiPanel extends Gui {
     }
     
     protected void drawbuttons(int mouseX, int mouseY, float partialTickTime) {
+        if (insideCheck & !isInside(mouseX, mouseY)) {
+            mouseX = -10;
+            mouseY = -10;
+        }
         for (int i = 0; i < buttonList.size(); i++) {
             buttonList.get(i).drawButton(mc, mouseX, mouseY, partialTickTime);
         }

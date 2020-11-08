@@ -3,6 +3,8 @@ package moe.plushie.armourers_workshop.common.network;
 import org.apache.logging.log4j.Level;
 
 import moe.plushie.armourers_workshop.ArmourersWorkshop;
+import moe.plushie.armourers_workshop.api.common.capability.IPlayerWardrobeCap;
+import moe.plushie.armourers_workshop.api.common.capability.IWardrobeCap;
 import moe.plushie.armourers_workshop.client.gui.GuiAdminPanel;
 import moe.plushie.armourers_workshop.client.gui.GuiDebugTool;
 import moe.plushie.armourers_workshop.client.gui.GuiGuideBook;
@@ -10,14 +12,12 @@ import moe.plushie.armourers_workshop.client.gui.GuiToolOptions;
 import moe.plushie.armourers_workshop.client.gui.miniarmourer.GuiMiniArmourer;
 import moe.plushie.armourers_workshop.client.gui.wardrobe.GuiWardrobe;
 import moe.plushie.armourers_workshop.common.capability.entityskin.EntitySkinCapability;
-import moe.plushie.armourers_workshop.common.capability.wardrobe.IWardrobeCap;
 import moe.plushie.armourers_workshop.common.capability.wardrobe.WardrobeCap;
-import moe.plushie.armourers_workshop.common.capability.wardrobe.player.IPlayerWardrobeCap;
 import moe.plushie.armourers_workshop.common.capability.wardrobe.player.PlayerWardrobeCap;
+import moe.plushie.armourers_workshop.common.init.items.ModItems;
 import moe.plushie.armourers_workshop.common.inventory.ContainerSkinWardrobe;
 import moe.plushie.armourers_workshop.common.inventory.IGuiFactory;
 import moe.plushie.armourers_workshop.common.inventory.ModContainer;
-import moe.plushie.armourers_workshop.common.items.ModItems;
 import moe.plushie.armourers_workshop.common.lib.EnumGuiId;
 import moe.plushie.armourers_workshop.common.painting.tool.IConfigurableTool;
 import moe.plushie.armourers_workshop.utils.ModLogger;
@@ -108,7 +108,7 @@ public class GuiHandler implements IGuiHandler {
 
         switch (guiId) {
         case GUIDE_BOOK:
-            if (player.getHeldItemMainhand().getItem() == ModItems.guideBook) {
+            if (player.getHeldItemMainhand().getItem() == ModItems.GUIDE_BOOK) {
                 return new GuiGuideBook(player.getHeldItemMainhand());
             }
             break;

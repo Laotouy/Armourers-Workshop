@@ -9,7 +9,7 @@ import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDescriptor;
 import moe.plushie.armourers_workshop.client.config.ConfigHandlerClient;
 import moe.plushie.armourers_workshop.client.gui.GuiSkinnable;
 import moe.plushie.armourers_workshop.client.skin.cache.ClientSkinCache;
-import moe.plushie.armourers_workshop.common.blocks.BlockSkinnable;
+import moe.plushie.armourers_workshop.common.init.blocks.BlockSkinnable;
 import moe.plushie.armourers_workshop.common.inventory.ContainerSkinnable;
 import moe.plushie.armourers_workshop.common.inventory.IGuiFactory;
 import moe.plushie.armourers_workshop.common.inventory.ModInventory;
@@ -262,7 +262,7 @@ public class TileEntitySkinnable extends ModTileEntity implements IGuiFactory {
     }
 
     private Skin getSkinServer(ISkinDescriptor skinPointer) {
-        return CommonSkinCache.INSTANCE.getSkin(skinPointer);
+        return CommonSkinCache.INSTANCE.softGetSkin(skinPointer.getIdentifier());
     }
     
     public void setRelatedBlocks(ArrayList<BlockPos> relatedBlocks) {
@@ -357,7 +357,7 @@ public class TileEntitySkinnable extends ModTileEntity implements IGuiFactory {
                 NBTTagList list = compound.getTagList(TAG_RELATED_BLOCKS, Constants.NBT.TAG_COMPOUND);
                 relatedBlocks = new ArrayList<BlockPos>();
                 for (int i = 0; i < list.tagCount(); i++) {
-                    NBTTagCompound blockCompound = (NBTTagCompound)list.getCompoundTagAt(i);
+                    NBTTagCompound blockCompound = list.getCompoundTagAt(i);
                     int x = blockCompound.getInteger(TAG_X);
                     int y = blockCompound.getInteger(TAG_Y);
                     int z = blockCompound.getInteger(TAG_Z);

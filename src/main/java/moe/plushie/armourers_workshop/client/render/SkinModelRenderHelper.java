@@ -2,6 +2,8 @@ package moe.plushie.armourers_workshop.client.render;
 
 import java.util.HashMap;
 
+import moe.plushie.armourers_workshop.api.common.IExtraColours;
+import moe.plushie.armourers_workshop.api.common.capability.IEntitySkinCapability;
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDescriptor;
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDye;
 import moe.plushie.armourers_workshop.api.common.skin.type.ISkinType;
@@ -18,10 +20,9 @@ import moe.plushie.armourers_workshop.client.model.skin.ModelSkinWings;
 import moe.plushie.armourers_workshop.client.model.skin.ModelTypeHelper;
 import moe.plushie.armourers_workshop.client.skin.cache.ClientSkinCache;
 import moe.plushie.armourers_workshop.common.capability.entityskin.EntitySkinCapability;
-import moe.plushie.armourers_workshop.common.capability.entityskin.IEntitySkinCapability;
-import moe.plushie.armourers_workshop.common.capability.wardrobe.ExtraColours;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
 import moe.plushie.armourers_workshop.common.skin.data.SkinProperties;
+import moe.plushie.armourers_workshop.common.skin.data.SkinProperty;
 import moe.plushie.armourers_workshop.common.skin.type.SkinTypeRegistry;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.GlStateManager;
@@ -29,6 +30,7 @@ import net.minecraft.client.renderer.GlStateManager.DestFactor;
 import net.minecraft.client.renderer.GlStateManager.SourceFactor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.EnumHandSide;
 import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -126,6 +128,54 @@ public final class SkinModelRenderHelper {
 
         return limitLimbs;
     }
+    
+    public static boolean isPlayersArmSlim(ModelBiped modelBiped, EntityPlayer entityPlayer, EnumHandSide handSide) {
+        boolean slim = false;
+        SkinProperty<Boolean> targetProp = null;
+        if (handSide == EnumHandSide.LEFT) {
+            slim = modelBiped.bipedLeftArm.rotationPointY == 2.5F;
+            targetProp = SkinProperties.PROP_MODEL_OVERRIDE_ARM_LEFT;
+        } else {
+            slim = modelBiped.bipedRightArm.rotationPointY == 2.5F;
+            targetProp = SkinProperties.PROP_MODEL_OVERRIDE_ARM_RIGHT;
+        }
+        
+        boolean armHidden = false;
+        IEntitySkinCapability skinCapability = EntitySkinCapability.get(entityPlayer);
+        if (skinCapability == null) {
+            return armHidden;
+        }
+        for (int i = 0; i < skinCapability.getSlotCountForSkinType(SkinTypeRegistry.skinChest); i++) {
+            ISkinDescriptor skinDescriptor = skinCapability.getSkinDescriptor(SkinTypeRegistry.skinChest, i);
+            if (skinDescriptor != null) {
+                Skin skin = ClientSkinCache.INSTANCE.getSkin(skinDescriptor, false);
+                if (skin != null) {
+                    if (targetProp.getValue(skin.getProperties())) {
+                        armHidden = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!armHidden) {
+            for (int i = 0; i < skinCapability.getSlotCountForSkinType(SkinTypeRegistry.skinOutfit); i++) {
+                ISkinDescriptor skinDescriptor = skinCapability.getSkinDescriptor(SkinTypeRegistry.skinOutfit, i);
+                if (skinDescriptor != null) {
+                    Skin skin = ClientSkinCache.INSTANCE.getSkin(skinDescriptor, false);
+                    if (skin != null) {
+                        if (targetProp.getValue(skin.getProperties())) {
+                            armHidden = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (armHidden) {
+            return false;
+        }
+        return slim;
+    }
 
     @SubscribeEvent
     public void onRender(RenderPlayerEvent.Pre event) {
@@ -174,7 +224,7 @@ public final class SkinModelRenderHelper {
         return true;
     }
     
-    public boolean renderEquipmentPart(Entity entity, ModelBiped modelBiped, Skin skin, ISkinDye skinDye, ExtraColours extraColours, double distance, boolean doLodLoading) {
+    public boolean renderEquipmentPart(Entity entity, ModelBiped modelBiped, Skin skin, ISkinDye skinDye, IExtraColours extraColours, double distance, boolean doLodLoading) {
         if (skin == null) {
             return false;
         }

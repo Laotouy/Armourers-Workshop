@@ -2,17 +2,17 @@ package moe.plushie.armourers_workshop.common.inventory;
 
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinDye;
 import moe.plushie.armourers_workshop.common.config.ConfigHandler;
+import moe.plushie.armourers_workshop.common.init.items.ModItems;
 import moe.plushie.armourers_workshop.common.inventory.slot.SlotDyeBottle;
 import moe.plushie.armourers_workshop.common.inventory.slot.SlotDyeableSkin;
 import moe.plushie.armourers_workshop.common.inventory.slot.SlotOutput;
-import moe.plushie.armourers_workshop.common.items.ModItems;
-import moe.plushie.armourers_workshop.common.painting.PaintRegistry;
+import moe.plushie.armourers_workshop.common.painting.PaintTypeRegistry;
 import moe.plushie.armourers_workshop.common.painting.PaintingHelper;
 import moe.plushie.armourers_workshop.common.skin.data.SkinDescriptor;
 import moe.plushie.armourers_workshop.common.tileentities.TileEntityDyeTable;
 import moe.plushie.armourers_workshop.utils.SkinNBTHelper;
 import moe.plushie.armourers_workshop.utils.UtilItems;
-import moe.plushie.armourers_workshop.utils.UtilPlayer;
+import moe.plushie.armourers_workshop.utils.PlayerUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
@@ -122,7 +122,7 @@ public class ContainerDyeTable extends Container {
             for (int i = 0; i < 8; i++) {
                 SlotDyeBottle slot = (SlotDyeBottle) getSlot(37 + i);
                 if (!slot.isLocked()) {
-                    UtilPlayer.giveItem(invPlayer.player, getSlot(37 + i).getStack());
+                    PlayerUtils.giveItem(invPlayer.player, getSlot(37 + i).getStack());
                 } else {
                     slot.setLocked(false);
                 }
@@ -172,9 +172,9 @@ public class ContainerDyeTable extends Container {
         for (int i = 0; i < 8; i++) {
             if (dye.haveDyeInSlot(i)) {
                 byte[] rgbt = dye.getDyeColour(i);
-                ItemStack bottle = new ItemStack(ModItems.dyeBottle, 1, 1);
+                ItemStack bottle = new ItemStack(ModItems.DYE_BOTTLE, 1, 1);
                 PaintingHelper.setToolPaintColour(bottle, rgbt);
-                PaintingHelper.setToolPaint(bottle, PaintRegistry.getPaintTypeFormByte(rgbt[3]));
+                PaintingHelper.setToolPaint(bottle, PaintTypeRegistry.getInstance().getPaintTypeFormByte(rgbt[3]));
                 if (dye.hasName(i)) {
                     bottle.setStackDisplayName(dye.getDyeName(i));
                 }
@@ -250,7 +250,7 @@ public class ContainerDyeTable extends Container {
                     if (!this.mergeItemStack(stack, 36, 37, false)) {
                         return ItemStack.EMPTY;
                     }
-                } else if (stack.getItem() == ModItems.dyeBottle && getSlot(36).getHasStack() & PaintingHelper.getToolHasPaint(stack)) {
+                } else if (stack.getItem() == ModItems.DYE_BOTTLE && getSlot(36).getHasStack() & PaintingHelper.getToolHasPaint(stack)) {
                     if (!this.mergeItemStack(stack, 37, 45, false)) {
                         return ItemStack.EMPTY;
                     }

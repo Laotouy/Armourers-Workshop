@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Level;
 
 import moe.plushie.armourers_workshop.api.common.library.ILibraryFile;
 import moe.plushie.armourers_workshop.api.common.skin.data.ISkinIdentifier;
-import moe.plushie.armourers_workshop.common.data.BidirectionalHashMap;
+import moe.plushie.armourers_workshop.common.data.type.BidirectionalHashMap;
 import moe.plushie.armourers_workshop.common.library.LibraryFile;
 import moe.plushie.armourers_workshop.common.skin.data.Skin;
 import moe.plushie.armourers_workshop.common.skin.data.SkinIdentifier;
@@ -119,12 +119,10 @@ public class SkinCacheLocalFile {
 
     public ILibraryFile getBackward(int skinId) {
         synchronized (cacheMapLock) {
-            synchronized (cacheMapLock) {
-                if (cacheMapFileLink.getMapBackward().containsKey(skinId)) {
-                    return cacheMapFileLink.getBackward(skinId);
-                } else {
-                    return null;
-                }
+            if (cacheMapFileLink.getMapBackward().containsKey(skinId)) {
+                return cacheMapFileLink.getBackward(skinId);
+            } else {
+                return null;
             }
         }
     }

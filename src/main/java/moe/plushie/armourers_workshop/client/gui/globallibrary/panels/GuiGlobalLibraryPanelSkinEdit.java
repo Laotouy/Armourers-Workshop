@@ -1,86 +1,94 @@
 package moe.plushie.armourers_workshop.client.gui.globallibrary.panels;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-
 import org.apache.logging.log4j.Level;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.gson.JsonObject;
-import com.mojang.authlib.GameProfile;
 
-import moe.plushie.armourers_workshop.client.gui.AbstractGuiDialog;
-import moe.plushie.armourers_workshop.client.gui.AbstractGuiDialog.DialogResult;
-import moe.plushie.armourers_workshop.client.gui.AbstractGuiDialog.IDialogCallback;
 import moe.plushie.armourers_workshop.client.gui.GuiHelper;
+import moe.plushie.armourers_workshop.client.gui.controls.AbstractGuiDialog;
+import moe.plushie.armourers_workshop.client.gui.controls.GuiCustomLabel;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiLabeledTextField;
 import moe.plushie.armourers_workshop.client.gui.controls.GuiPanel;
+import moe.plushie.armourers_workshop.client.gui.controls.GuiTextFieldCustom;
+import moe.plushie.armourers_workshop.client.gui.controls.IDialogCallback;
 import moe.plushie.armourers_workshop.client.gui.globallibrary.GuiGlobalLibrary;
 import moe.plushie.armourers_workshop.client.gui.globallibrary.GuiGlobalLibrary.Screen;
 import moe.plushie.armourers_workshop.client.gui.globallibrary.dialog.GuiGlobalLibraryDialogDelete;
-import moe.plushie.armourers_workshop.common.lib.LibModInfo;
+import moe.plushie.armourers_workshop.client.lib.LibGuiResources;
 import moe.plushie.armourers_workshop.common.library.global.GlobalSkinLibraryUtils;
-import moe.plushie.armourers_workshop.common.library.global.auth.PlushieAuth;
-import moe.plushie.armourers_workshop.common.library.global.auth.PlushieSession;
+import moe.plushie.armourers_workshop.common.library.global.task.user.GlobalTaskSkinDelete;
+import moe.plushie.armourers_workshop.common.library.global.task.user.GlobalTaskSkinEdit;
 import moe.plushie.armourers_workshop.utils.ModLogger;
 import moe.plushie.armourers_workshop.utils.TranslateUtils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StringUtils;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 public class GuiGlobalLibraryPanelSkinEdit extends GuiPanel implements IDialogCallback {
 
-    private static final ResourceLocation BUTTON_TEXTURES = new ResourceLocation(LibModInfo.ID.toLowerCase(), "textures/gui/globalLibrary.png");
-    
+    private static final ResourceLocation BUTTON_TEXTURES = new ResourceLocation(LibGuiResources.GUI_GLOBAL_LIBRARY);
+
     private final String guiName;
+    private boolean moderator = false;
     private GuiLabeledTextField textName;
     private GuiLabeledTextField textTags;
-    private GuiLabeledTextField textDescription;
+    private GuiTextFieldCustom textDescription;
     private GuiButtonExt buttonUpdate;
     private GuiButtonExt buttonDelete;
-    private FutureTask<JsonObject> taskSkinEdit;
+    private GuiCustomLabel statsText;
+
     private JsonObject skinJson = null;
     private Screen returnScreen;
     private boolean firstTick = false;
-    
+
     public GuiGlobalLibraryPanelSkinEdit(GuiScreen parent, int x, int y, int width, int height) {
         super(parent, x, y, width, height);
-        guiName = ((GuiGlobalLibrary)parent).getGuiName() + ".edit";
+        guiName = ((GuiGlobalLibrary) parent).getGuiName() + ".edit";
     }
-    
+
     @Override
     public void initGui() {
         super.initGui();
         buttonList.clear();
-        textName = new GuiLabeledTextField(fontRenderer, x + 5, y + 35, 180, 12);
+        textName = new GuiLabeledTextField(fontRenderer, x + 5, y + 35, width - 15 - 162, 12);
         textName.setEmptyLabel(GuiHelper.getLocalizedControlName(guiName, "enterName"));
         textName.setMaxStringLength(80);
-        
-        textTags = new GuiLabeledTextField(fontRenderer, x + 5, y + 65, 180, 12);
+
+        textTags = new GuiLabeledTextField(fontRenderer, x + 5, y + 65, width - 15 - 162, 12);
         textTags.setEmptyLabel(GuiHelper.getLocalizedControlName(guiName, "enterTags"));
-        
-        textDescription = new GuiLabeledTextField(fontRenderer, x + 5, y + 95, width - 10, 12);
+
+        textDescription = new GuiTextFieldCustom(x + 5, y + 95, width - 15 - 162, height - 95 - 40);
         textDescription.setEmptyLabel(GuiHelper.getLocalizedControlName(guiName, "enterDescription"));
         textDescription.setMaxStringLength(255);
-        
+
         if (skinJson != null) {
             if (skinJson.has("name")) {
                 textName.setText(skinJson.get("name").getAsString());
             }
-            
+
             if (skinJson.has("description")) {
                 textDescription.setText(skinJson.get("description").getAsString());
             }
         }
-        
+
         buttonUpdate = new GuiButtonExt(0, x + 5, y + height - 25, 100, 20, GuiHelper.getLocalizedControlName(guiName, "buttonUpdate"));
         buttonDelete = new GuiButtonExt(0, x + width - 105, y + height - 25, 100, 20, GuiHelper.getLocalizedControlName(guiName, "buttonDelete"));
-        
+
+        statsText = new GuiCustomLabel(fontRenderer, x + width - 162 - 5, y + 5, 162, height - 90);
+
         buttonList.add(buttonUpdate);
         buttonList.add(buttonDelete);
     }
-    
+
+    public void setModerator(boolean moderator) {
+        this.moderator = moderator;
+    }
+
     @Override
     public boolean keyTyped(char c, int keycode) {
         if (!visible | !enabled) {
@@ -92,12 +100,12 @@ public class GuiGlobalLibraryPanelSkinEdit extends GuiPanel implements IDialogCa
         if (textTags.textboxKeyTyped(c, keycode)) {
             return true;
         }
-        if (textDescription.textboxKeyTyped(c, keycode)) {
+        if (textDescription.keyTyped(c, keycode)) {
             return true;
         }
         return false;
     }
-    
+
     @Override
     public boolean mouseClicked(int mouseX, int mouseY, int button) {
         if (!visible | !enabled) {
@@ -106,12 +114,11 @@ public class GuiGlobalLibraryPanelSkinEdit extends GuiPanel implements IDialogCa
         boolean clicked = super.mouseClicked(mouseX, mouseY, button);
         if (!clicked) {
             clicked = textName.mouseClicked(mouseX, mouseY, button);
-        }
-        if (!clicked) {
             clicked = textTags.mouseClicked(mouseX, mouseY, button);
+            clicked = textDescription.mouseClicked(mouseX, mouseY, button);
         }
         if (!clicked) {
-            clicked = textDescription.mouseClicked(mouseX, mouseY, button);
+            clicked = statsText.mouseClick(mouseX, mouseY, button);
         }
         if (button == 1) {
             if (textName.isFocused()) {
@@ -126,7 +133,7 @@ public class GuiGlobalLibraryPanelSkinEdit extends GuiPanel implements IDialogCa
         }
         return clicked;
     }
-    
+
     @Override
     public void update() {
         super.update();
@@ -135,36 +142,8 @@ public class GuiGlobalLibraryPanelSkinEdit extends GuiPanel implements IDialogCa
             buttonUpdate.enabled = true;
         }
         firstTick = false;
-        if (taskSkinEdit != null && taskSkinEdit.isDone()) {
-            try {
-                JsonObject json = taskSkinEdit.get();
-                taskSkinEdit = null;
-                if (json != null) {
-                    if (json.has("valid") & json.has("action")) {
-                        String action = json.get("action").getAsString();
-                        boolean valid = json.get("valid").getAsBoolean();
-                        if (action.equals("user-skin-edit")) {
-                            ((GuiGlobalLibrary)parent).panelHome.updateSkinPanels();
-                            ((GuiGlobalLibrary)parent).switchScreen(returnScreen);
-                        } else if (action.equals("user-skin-delete")) {
-                            ((GuiGlobalLibrary)parent).switchScreen(returnScreen);
-                        } else {
-                            ModLogger.log(Level.WARN, "Server send unknown action: " + action);
-                        }
-                    } else {
-                        ModLogger.log(Level.ERROR, "Server returned invalid responce.");
-                    }
-                } else {
-                    ModLogger.log(Level.ERROR, "Server returned invalid responce.");
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
     }
-    
+
     @Override
     protected void actionPerformed(GuiButton button) {
         if (!visible | !enabled) {
@@ -175,94 +154,136 @@ public class GuiGlobalLibraryPanelSkinEdit extends GuiPanel implements IDialogCa
         }
         if (button == buttonUpdate) {
             if (skinJson != null && skinJson.has("id")) {
-                if (authenticateUser()) {
-                    updateSkin();
-                }
+                updateSkin();
             }
         }
         if (button == buttonDelete) {
-            ((GuiGlobalLibrary)parent).openDialog(new GuiGlobalLibraryDialogDelete((GuiGlobalLibrary)parent, guiName + ".dialog.delete", this, 190, 100));
+            ((GuiGlobalLibrary) parent).openDialog(new GuiGlobalLibraryDialogDelete(parent, guiName + ".dialog.delete", this, 190, 100));
         }
     }
-    
+
     public void displaySkinInfo(JsonObject jsonObject, Screen returnScreen) {
         skinJson = jsonObject;
-        ((GuiGlobalLibrary)parent).switchScreen(Screen.SKIN_EDIT);
+        ((GuiGlobalLibrary) parent).switchScreen(Screen.SKIN_EDIT);
         this.returnScreen = returnScreen;
         firstTick = true;
     }
-    
-    private boolean authenticateUser () {
-        GameProfile gameProfile = mc.player.getGameProfile();
-        PlushieSession plushieSession = PlushieAuth.PLUSHIE_SESSION;
-        if (!plushieSession.isAuthenticated()) {
-            JsonObject jsonObject = PlushieAuth.authenticateUser(gameProfile.getName(), gameProfile.getId().toString());
-            plushieSession.authenticate(jsonObject);
-        }
-        
-        if (!plushieSession.isAuthenticated()) {
-            ModLogger.log(Level.ERROR, "Authentication failed.");
-            return false;
-        }
-        return true;
-    }
-    
+
     public void updateSkin() {
-        PlushieSession plushieSession = PlushieAuth.PLUSHIE_SESSION;
-        GuiGlobalLibrary globalLibrary = (GuiGlobalLibrary) parent;
-        int userId = plushieSession.getServerId();
-        String accessToken = plushieSession.getAccessToken();
-        int skinId = skinJson.get("id").getAsInt();
-        String name = textName.getText().trim();
-        String description = textDescription.getText().trim();
-        taskSkinEdit = GlobalSkinLibraryUtils.editSkin(globalLibrary.uploadExecutor, userId, accessToken, skinId, name, description);
+        int skinID = skinJson.get("id").getAsInt();
+        new GlobalTaskSkinEdit(skinID, textName.getText().trim(), textDescription.getText().trim(), moderator).createTaskAndRun(new FutureCallback<JsonObject>() {
+
+            @Override
+            public void onSuccess(JsonObject result) {
+                Minecraft.getMinecraft().addScheduledTask(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        if (result.has("valid") & result.has("action")) {
+                            String action = result.get("action").getAsString();
+                            boolean valid = result.get("valid").getAsBoolean();
+                            if (action.equals("user-skin-edit")) {
+                                ((GuiGlobalLibrary) parent).panelHome.updateSkinPanels();
+                                ((GuiGlobalLibrary) parent).switchScreen(returnScreen);
+                            } else {
+                                ModLogger.log(Level.WARN, "Server send unknown action: " + action);
+                            }
+                        } else {
+                            ModLogger.log(Level.ERROR, "Server returned invalid responce.");
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                t.printStackTrace();
+            }
+        });
     }
-    
+
     public void deleteSkin() {
-        PlushieSession plushieSession = PlushieAuth.PLUSHIE_SESSION;
-        GuiGlobalLibrary globalLibrary = (GuiGlobalLibrary) parent;
-        int userId = plushieSession.getServerId();
-        String accessToken = plushieSession.getAccessToken();
-        int skinId = skinJson.get("id").getAsInt();
-        taskSkinEdit = GlobalSkinLibraryUtils.deleteSkin(globalLibrary.jsonDownloadExecutor, userId, accessToken, skinId);
+        int skinID = skinJson.get("id").getAsInt();
+        new GlobalTaskSkinDelete(skinID, moderator).createTaskAndRun(new FutureCallback<JsonObject>() {
+
+            @Override
+            public void onSuccess(JsonObject result) {
+                Minecraft.getMinecraft().addScheduledTask(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        if (result.has("valid") & result.has("action")) {
+                            String action = result.get("action").getAsString();
+                            boolean valid = result.get("valid").getAsBoolean();
+                            if (action.equals("user-skin-delete")) {
+                                if (returnScreen == Screen.HOME) {
+                                    ((GuiGlobalLibrary) parent).panelHome.updateSkinPanels();
+                                }
+                                if (returnScreen == Screen.SEARCH) {
+                                    ((GuiGlobalLibrary) parent).panelSearchResults.refresh();
+                                }
+                                if (returnScreen == Screen.USER_SKINS) {
+                                    ((GuiGlobalLibrary) parent).panelUserSkins.refresh();
+                                }
+                                ((GuiGlobalLibrary) parent).switchScreen(returnScreen);
+                            } else {
+                                ModLogger.log(Level.WARN, "Server send unknown action: " + action);
+                            }
+                        } else {
+                            ModLogger.log(Level.ERROR, "Server returned invalid responce.");
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                t.printStackTrace();
+            }
+        });
     }
-    
+
     @Override
     public void draw(int mouseX, int mouseY, float partialTickTime) {
         if (!visible) {
             return;
         }
         drawGradientRect(this.x, this.y, this.x + this.width, this.y + height, 0xC0101010, 0xD0101010);
-        
+
         super.draw(mouseX, mouseY, partialTickTime);
         fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "name"), x + 5, y + 5, 0xFFFFFF);
-        
+
         fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "skinName"), x + 5, y + 25, 0xFFFFFF);
         textName.drawTextBox();
-        
+
         fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "skinTags"), x + 5, y + 55, 0xFFFFFF);
         textTags.drawTextBox();
-        
+
         fontRenderer.drawString(GuiHelper.getLocalizedControlName(guiName, "skinDescription"), x + 5, y + 85, 0xFFFFFF);
-        textDescription.drawTextBox();
-        fontRenderer.drawString(textDescription.getText().length() + " / " + "255", x + 5, y + 115, 0xFFFFFF);
-        
+        textDescription.drawButton(mc, mouseX, mouseY, partialTickTime);
+        // fontRenderer.drawString(textDescription.getText().length() + " / " + "255", x
+        // + 5, y + 115, 0xFFFFFF);
+
+        statsText.clearText();
         int[] javaVersion = GlobalSkinLibraryUtils.getJavaVersion();
         if (!GlobalSkinLibraryUtils.isValidJavaVersion(javaVersion)) {
-            fontRenderer.drawSplitString(TranslateUtils.translate("inventory.armourersworkshop:globalSkinLibrary.invalidJava", javaVersion[0], javaVersion[1]), x + 135, y + 65, width - 140, 0xFF8888);
+            statsText.addText(TextFormatting.RED.toString());
+            statsText.addText(TranslateUtils.translate("inventory.armourers_workshop:global-skin-library.invalidJava", javaVersion[0], javaVersion[1]));
+            statsText.addText(TextFormatting.RESET.toString());
+            statsText.addNewLine();
+            statsText.addNewLine();
         }
+
+        statsText.draw(mouseX, mouseY);
     }
 
     @Override
     public void dialogResult(AbstractGuiDialog dialog, DialogResult result) {
-        ModLogger.log(result);
         if (result == DialogResult.OK) {
             if (skinJson != null && skinJson.has("id")) {
-                if (authenticateUser()) {
-                    deleteSkin();
-                }
+                deleteSkin();
             }
         }
-        ((GuiGlobalLibrary)parent).dialogResult(dialog, result);
+        ((GuiGlobalLibrary) parent).closeDialog();
     }
 }
