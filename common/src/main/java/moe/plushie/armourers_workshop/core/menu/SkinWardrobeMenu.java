@@ -92,6 +92,8 @@ public class SkinWardrobeMenu extends ContainerMenu {
             var x = slotsX + (column + i) * 19;
             var y = slotsY + row * 19;
             var slot = addGroupSlot(inventory, index + i, x, y, group, slotType);
+            // 设置衣橱引用，用于触发事件
+            slot.setWardrobe(wardrobe, slotType, i);
             customSlots.add(slot);
         }
     }

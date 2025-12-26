@@ -52,7 +52,11 @@ public class SkinItem extends FlavouredBlockItem {
         }
         // we need consume item stack even in creative mode.
         var resultStack = itemStack.copy();
-        wardrobe.setItem(slotType, slot, resultStack.split(1));
+        var skinToEquip = resultStack.split(1);
+        // setItem 会触发事件，如果被取消则返回 false
+        if (!wardrobe.setItem(slotType, slot, skinToEquip)) {
+            return OpenInteractionResult.FAIL;
+        }
         wardrobe.broadcast();
         player.setItemInHand(hand, resultStack);
         return OpenInteractionResult.CONSUME.heldItemTransformedTo(itemStack);

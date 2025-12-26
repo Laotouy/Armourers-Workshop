@@ -9,10 +9,12 @@ import moe.plushie.armourers_workshop.core.entity.EntityProfile;
 import moe.plushie.armourers_workshop.core.menu.SkinSlotType;
 import moe.plushie.armourers_workshop.core.network.UpdateWardrobePacket;
 import moe.plushie.armourers_workshop.core.utils.OpenEquipmentSlot;
+import moe.plushie.armourers_workshop.api.event.SkinWardrobeEvent;
 import moe.plushie.armourers_workshop.init.ModConfig;
 import moe.plushie.armourers_workshop.init.ModEntityProfiles;
 import moe.plushie.armourers_workshop.init.ModMenuTypes;
 import moe.plushie.armourers_workshop.init.ModPermissions;
+import moe.plushie.armourers_workshop.init.platform.EventManager;
 import moe.plushie.armourers_workshop.init.platform.NetworkManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -111,11 +113,40 @@ public class SkinWardrobe implements IDataSerializable.Mutable {
         return inventory.getItem(slotType.index() + slot);
     }
 
-    public void setItem(SkinSlotType slotType, int slot, ItemStack itemStack) {
+    /**
+     * 设置指定槽位的物品
+     * @param slotType 槽位类型
+     * @param slot 槽位索引
+     * @param itemStack 要设置的物品
+     * @return true 如果设置成功，false 如果被事件取消或槽位无效
+     */
+    public boolean setItem(SkinSlotType slotType, int slot, ItemStack itemStack) {
         if (slot < 0 || slot >= getUnlockedSize(slotType)) {
-            return;
+            return false;
+        }
+        // 只在服务端触发事件
+        var entity = entity();
+        if (entity != null && !entity.level().isClientSide()) {
+            var oldItem = inventory.getItem(slotType.index() + slot);
+            // 卸下旧物品事件
+            if (!oldItem.isEmpty()) {
+                var unequipEvent = new SkinWardrobeEvent.Unequip(this, slotType, slot, oldItem);
+                EventManager.post(SkinWardrobeEvent.Unequip.class, unequipEvent);
+                if (unequipEvent.isCancelled()) {
+                    return false;
+                }
+            }
+            // 穿戴新物品事件
+            if (!itemStack.isEmpty()) {
+                var equipEvent = new SkinWardrobeEvent.Equip(this, slotType, slot, itemStack);
+                EventManager.post(SkinWardrobeEvent.Equip.class, equipEvent);
+                if (equipEvent.isCancelled()) {
+                    return false;
+                }
+            }
         }
         inventory.setItem(slotType.index() + slot, itemStack);
+        return true;
     }
 
     public void dropAll(@Nullable Consumer<ItemStack> consumer) {
