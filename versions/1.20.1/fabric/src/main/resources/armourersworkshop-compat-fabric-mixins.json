@@ -23,7 +23,8 @@
     "dynamiclight/FabricSodiumDynamicLightsMixin$BlockEntityLightHandler",
     "backpack/FabricMrcrayfishBackpackRendererMixin",
     "backpack/FabricTravelersBackpackRendererMixin",
-    "backpack/FabricSophisticatedBackpackRendererMixin"
+    "backpack/FabricSophisticatedBackpackRendererMixin",
+    "compat/FabricModernUITooltipMixin"
   ],
   "mixins": [
     "FabricEntityHandlerMixin",

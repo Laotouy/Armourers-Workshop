@@ -72,20 +72,12 @@ public class ItemTooltipManager {
             }
         }
 
-        if (isItemOwner && options.contains(SkinDescriptor.TooltipFlags.FLAVOUR) && Strings.isNotBlank(skin.flavourText())) {
-            tooltip.add(TranslateUtils.title("item.armourers_workshop.rollover.flavour", skin.flavourText().trim()));
-        }
-
         if (options.contains(SkinDescriptor.TooltipFlags.AUTHOR) && Strings.isNotBlank(skin.authorName())) {
             tooltip.add(TranslateUtils.subtitle("item.armourers_workshop.rollover.skinAuthor", skin.authorName().trim()));
         }
 
         if (options.contains(SkinDescriptor.TooltipFlags.TYPE)) {
             tooltip.add(TranslateUtils.subtitle("item.armourers_workshop.rollover.skinType", TranslateUtils.Name.of(skin.type())));
-        }
-
-        if (!isItemOwner && options.contains(SkinDescriptor.TooltipFlags.FLAVOUR) && Strings.isNotBlank(skin.flavourText())) {
-            tooltip.add(TranslateUtils.title("item.armourers_workshop.rollover.flavour", skin.flavourText().trim()));
         }
 
         if (ModDebugger.tooltip && !InputManagerImpl.hasShiftDown()) {

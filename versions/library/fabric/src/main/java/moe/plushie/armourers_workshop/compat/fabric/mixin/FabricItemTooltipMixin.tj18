@@ -6,16 +6,15 @@ import moe.plushie.armourers_workshop.compat.client.event.AbstractRenderItemTool
 import moe.plushie.armourers_workshop.compat.fabric.AbstractFabricTooltipComponent;
 import moe.plushie.armourers_workshop.init.event.client.ItemTooltipEvent;
 import moe.plushie.armourers_workshop.init.platform.EventManager;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.List;
 
@@ -24,23 +23,52 @@ import java.util.List;
 public class FabricItemTooltipMixin {
 
     @Unique
-    private static ItemStack RENDERING_ITEM_STACK;
+    private static ItemStack aw2$tooltipStack;
+
+    // Capture ItemStack directly from the entry point method.
+    @Inject(method = "renderTooltip(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/item/ItemStack;II)V", at = @At("HEAD"))
+    public void aw2$renderTooltipPre(PoseStack poseStack, ItemStack itemStack, int mouseX, int mouseY, CallbackInfo ci) {
+        aw2$tooltipStack = itemStack;
+    }
+
+    @Inject(method = "renderTooltip(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/item/ItemStack;II)V", at = @At("TAIL"))
+    public void aw2$renderTooltipPost(PoseStack poseStack, ItemStack itemStack, int mouseX, int mouseY, CallbackInfo ci) {
+        aw2$tooltipStack = null;
+    }
 
     @Inject(method = "renderTooltipInternal", at = @At(value = "HEAD"))
     public void aw2$renderTooltip(PoseStack poseStack, List<ClientTooltipComponent> tooltips, int mouseX, int mouseY, CallbackInfo ci) {
-        RENDERING_ITEM_STACK = AbstractFabricTooltipComponent.deattach(tooltips);
-    }
-
-    @Inject(method = "renderTooltipInternal", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V"), locals = LocalCapture.CAPTURE_FAILHARD)
-    public void aw2$renderTooltip(PoseStack poseStack, List<? extends FormattedCharSequence> tooltips, int mouseX, int mouseY, CallbackInfo ci, int w, int h, int x, int y) {
-        // ignore when the tooltip without from item stack.
-        var itemStack = RENDERING_ITEM_STACK;
+        // Try to get ItemStack from direct capture first, fallback to text-based lookup.
+        var itemStack = aw2$tooltipStack;
+        if (itemStack == null) {
+            itemStack = AbstractFabricTooltipComponent.deattach(tooltips);
+        }
         if (itemStack == null) {
             return;
+        }
+        // calculate tooltip size manually (same as vanilla).
+        var font = Minecraft.getInstance().font;
+        int w = 0;
+        int h = tooltips.size() == 1 ? -2 : 0;
+        for (var tooltip : tooltips) {
+            int k = tooltip.getWidth(font);
+            if (k > w) {
+                w = k;
+            }
+            h += tooltip.getHeight();
         }
         var screen = Screen.class.cast(this);
         var screenWidth = screen.width;
         var screenHeight = screen.height;
+        // calculate position (same as vanilla).
+        int x = mouseX + 12;
+        int y = mouseY - 12;
+        if (x + w > screenWidth) {
+            x -= 28 + w;
+        }
+        if (y + h + 6 > screenHeight) {
+            y = screenHeight - h - 6;
+        }
         EventManager.post(ItemTooltipEvent.Render.class, AbstractRenderItemTooltipEvent.create(itemStack, x, y, w, h, screenWidth, screenHeight, mouseX, mouseY, 0, poseStack, screen));
     }
 }
